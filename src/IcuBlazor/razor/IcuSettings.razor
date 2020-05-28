@@ -1,0 +1,72 @@
+﻿@page "/IcuSettings"
+
+@using Microsoft.AspNetCore.Components.Forms
+
+@code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [Parameter] public EventCallback<string> OnSubmit { get; set; }
+
+    IcuConfig c;
+    EditContext editContext;
+
+    protected override void OnInitialized() {
+        c = ICU.Config;
+        editContext = new EditContext(c);
+
+        editContext.OnFieldChanged += (s, e) => {
+            editContext.Validate();
+            var f = e.FieldIdentifier.FieldName;
+            ICU.SaveConfigVar(f);
+            StateHasChanged();
+        };
+    }
+
+    void submit(string result) {
+        OnSubmit.InvokeAsync(result);
+    }
+}
+
+
+<br/>
+<h2>ICU Blazor Settings</h2>
+
+<IcuEditForm class="icu-form icu-settings-form xlabel-above" 
+             EditContext="@editContext">
+    <EditFormEntry>
+        @*<hr />*@
+        <DataAnnotationsValidator />
+    </EditFormEntry>
+
+    <EditFormEntry Label="WWW Root">
+        <div> @c.WWWroot</div>
+    </EditFormEntry>
+    <EditFormEntry Label=" Test Dir">
+        <div> @c.TestDir</div>
+    </EditFormEntry>
+    <EditFormEntry Label="Filter">
+        <InputText @bind-Value="c.Filter" />
+    </EditFormEntry>
+
+    <EditFormEntry Label="Interactive Run">
+        <InputCheckbox @bind-Value="c.Interactive" /> Pause to verify diff tests
+    </EditFormEntry>
+
+    <EditFormEntry Label="Quick Abort">
+        <InputCheckbox @bind-Value="c.StopOnFirstFailure" /> Abort on first exception
+    </EditFormEntry>
+
+    <EditFormEntry>
+        <hr />
+        <GridLayout Cols="50% 1fr 1fr">
+            <div></div>
+
+            <div></div>
+            <div class="button btn-primary" @onclick="@(()=>submit("close"))">Close</div>
+
+            @*<div class="button btn-secondary" @onclick="@(()=>submit("close"))">Close</div>
+            <div class="button btn-primary"   @onclick="@(()=>submit("save"))">Save</div>*@
+        </GridLayout>
+    </EditFormEntry>
+</IcuEditForm>
+<br/>
+<br/>

@@ -1,0 +1,44 @@
+﻿@page "/IcuTestDiv"
+
+@using IcuBlazor
+
+@code {
+    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
+    [Parameter] public IcuTestSuite Suite { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public int Width { get; set; } = 0;
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object> AdditionalAttributes { get; set; }
+    IDictionary<string, object> attrs { get; set; }
+
+    void AugmentStyle() {
+        var n = "style";
+        attrs = BaseUtils.CopyDict<string, object>(AdditionalAttributes);
+        var v = attrs.ContainsKey(n) ? attrs[n] : "";
+        attrs[n] = $"{v};width:{Width}px";
+    }
+
+    protected override void OnInitialized() {
+        AugmentStyle();
+        base.OnInitialized();
+    }
+
+}
+
+@if (Suite == null) {
+    var e = new IcuException(
+        "IcuTestDiv.Suite is undefined",
+        "1) Typically use <IcuTestDiv Suite=\"@this\" Width=\"300\" ...>");
+    ICU.MsgBus.Notify(IcuEvent.NewError(e));
+} else if (Width <= 0) {
+    var e = new IcuException(
+        "IcuTestDiv.Width is not set",
+        "1) Typically use <IcuTestDiv Suite=\"@this\" Width=\"300\" ...>");
+    ICU.MsgBus.Notify(IcuEvent.NewError(e));
+} else if (Suite.Running) {
+    <div id="icu-test-div" @attributes="attrs">
+        @ChildContent
+    </div>
+    <br />
+    <br />
+}

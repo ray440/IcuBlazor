@@ -1,0 +1,15 @@
+﻿@page "/EditFormEntry"
+
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object> AdditionalAttributes { get; set; }
+
+}
+
+<label>@Label</label>
+<div class="entry" @attributes="AdditionalAttributes" >
+    @ChildContent
+</div>

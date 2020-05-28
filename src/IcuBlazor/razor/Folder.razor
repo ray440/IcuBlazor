@@ -1,0 +1,86 @@
+﻿@page "/Folder"
+
+@inject UIHelper UI
+
+@code {
+
+    [Parameter] public BaseTree Tree { get; set; }
+    [Parameter] public RenderFragment Header { get; set; }
+    [Parameter] public RenderFragment HeaderTitle { get; set; }
+    [Parameter] public RenderFragment Detail { get; set; }
+    [Parameter] public bool StayOpen { get; set; } = false;
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool HasDetail { get; set; } = true;
+    [Parameter] public bool Indented { get; set; } = true;
+
+    string okey = null; // save folder's open state to LocalStorage
+    void makeOpenKey() { okey = SlashPath.Make(Tree.Path, "Open"); }
+    async Task ReadOpenKey() { Tree.Open = await UI.LS.GetItem<bool>(okey, true); }
+    void SaveOpenKey() { _ = UI.LS.SetItem(okey, Tree.Open); }  // fire & forget
+
+    void ToggleDetail() {
+        Tree.ToggleOpen();
+        SaveOpenKey();
+    }
+
+    protected override async Task OnInitializedAsync() {
+        makeOpenKey();
+        await ReadOpenKey();
+        Tree.OnChange.DoAction((msg) => {
+            base.InvokeAsync(StateHasChanged);
+        });
+    }
+
+}
+
+@{
+    var open = StayOpen || Tree.Open;
+    var iconOpen =
+            (StayOpen || !HasDetail) ? ""
+            : (open ? "oi-chevron-bottom" : "oi-chevron-right");
+    var indent = (Indented && ShowHeader) ? "indent" : "";
+    var showDetail = HasDetail && open;
+}
+
+<Styled>
+.indent {
+    margin-left: 1.5em;
+}
+.open-icon {
+    width: 1.5em;
+    color: #aaa;
+    text-align: center;
+}
+.open-icon:hover {
+    color: black;
+}
+.hdr-title {
+    padding: 0em 0.5em 0em 0em;
+    align-items: center;
+}
+</Styled>
+
+@*
+Note: This layout doesn't wrap Folders in a div container (e.g. grid-layout).
+- This provides a more efficient & dynamic rendering of recursive elements.
+  - elements are rendered top to bottom (parent then child)
+  - rather than inside-out (child then parent)
+    - e.g. a grid or flex layout is expensive (& does wacky things!)
+*@
+
+@if (ShowHeader) {
+    if (Header != null) {
+        @Header
+    } else if (HeaderTitle != null) {
+        <div class="flexrow fillw hdr-title" @onclick="ToggleDetail">
+            <div class="oi @iconOpen open-icon"></div>
+            @HeaderTitle
+        </div>
+    }
+}
+
+@if (showDetail) {
+    <div class="@indent">
+        @Detail
+    </div>
+}

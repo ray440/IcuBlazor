@@ -1,0 +1,99 @@
+﻿@page "/IcuSettings"
+@using Microsoft.AspNetCore.Components.Forms
+
+@*@inherits EditForm*@
+@code {
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object> AdditionalAttributes { get; set; }
+}
+
+<Styled>
+.icu-form {
+    border: 0.1em solid @XSS.darker(0.2);
+    font-family: [--font];
+    background: @XSS.darker(0.02);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto;
+    grid-gap: 0.2em 0.5em;
+    padding: 1em 1em;
+}
+
+.icu-form .label-above {
+    grid-template-columns: 1fr;
+    grid-gap: 0.5em 0em;
+}
+.icu-form .header {
+}
+.icu-form .footer {
+    margin-top: 1em;
+}
+.icu-form .entry {
+    width:100%;
+}
+.icu-form > label {
+    grid-column: 1 / 2;
+    width: 100%;
+    text-align: right;
+    font-weight: bold;
+    @*color: [--accent];*@
+    color: @XSS.darker(0.3);
+}
+.icu-form .label-above > label {
+    grid-template-columns: 1fr;
+    text-align: left;
+    @*font-weight: normal;*@
+    font-size: 90%;
+    font-variant: small-caps;
+    margin: 0.25em 0 -0.5em 0;
+}
+
+
+.icu-form input,
+.icu-form select,
+.icu-form textarea,
+@*.icu-form .button,*@
+.icu-form .uneditable-input {
+    width: 100%;
+    font-size: inherit;
+    font-family: inherit;
+    outline: none !important;
+    border-radius: 0px;
+    border-width: 0px;
+    border-bottom: 0.1em solid #ccc;
+    padding: 0.1em 0.5em;
+    height: auto;
+    color: black;
+    @*font-weight:bolder;*@
+    background: @XSS.darker(0.05);
+}
+.icu-form .button {
+    text-align: center;
+    padding: 0.2em 1em;
+    @*border: 0.2em solid @XSS.lighter(0.3);*@
+}
+.icu-form input[type="checkbox"] {
+    width : 1.5em;
+    border: 0.1em solid #ccc;
+}
+.icu-form input:hover,
+.icu-form select:hover,
+.icu-form textarea:hover {
+    border-bottom-color: [--accent];
+}
+.icu-form .button:hover {
+    @*background: @XSS.lighter(0.3) !important;*@
+    @*border: 0.2em solid @XSS.lighter(0.3);*@
+}
+.icu-form .modified.valid {
+    @*border-bottom-color: [--pass-dark];*@
+}
+.icu-form .modified.invalid {
+    border-color: [--fail-dark];
+}
+</Styled>
+
+<EditForm @attributes="AdditionalAttributes">
+    @ChildContent
+</EditForm>

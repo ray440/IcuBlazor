@@ -1,0 +1,58 @@
+﻿@page "/OutcomeIcon"
+
+@code {
+    [Parameter] public OutcomeType Outcome { get; set; } = OutcomeType.Unknown;
+
+    static public (string State, string Icon) OutcomeStat(OutcomeType oc) {
+        var state = "unknown";
+        var icon = "";
+        switch (oc.Tag) {
+        case OutcomeType.Tags.Pass:
+            state = "pass";
+            icon = "oi-circle-check";
+            break;
+        case OutcomeType.Tags.Fail:
+            state = "fail";
+            icon = "oi-circle-x";
+            break;
+        case OutcomeType.Tags.Skip:
+            state = "skip";
+            icon = "oi-warning";
+            break;
+        case OutcomeType.Tags.Running:
+            state = "plain";
+            icon = "oi-loop-circular";
+            break;
+        case OutcomeType.Tags.Unknown:
+            state = "plain";
+            icon = "oi-contrast";
+            break;
+        }
+        return (State: state, Icon: icon);
+    }
+
+}
+@{
+    var si = OutcomeStat(Outcome);
+}
+<Styled>
+.x-icon {
+    width: 1.5em;
+    text-align: center;
+}
+.fg-plain {
+    color: [--plain];
+}
+.fg-pass {
+    color: [--pass-dark];
+}
+.fg-fail {
+    color: [--fail-dark];
+}
+.fg-skip {
+    color: [--skip-dark];
+}
+</Styled>
+
+@* -- zzz this entire component should be cached by OutCome -- *@
+<div class="oi @si.Icon x-icon fg-@si.State"> </div>

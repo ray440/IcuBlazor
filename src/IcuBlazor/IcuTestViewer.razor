@@ -1,0 +1,110 @@
+﻿@page "/IcuTestViewer"
+
+@using System.Reflection
+@using IcuBlazor.razor
+
+@inject IServiceProvider sp
+@inject NavigationManager nav
+
+@* --------------------------------------------------
+<IcuTestViewer> is here to: 
+- Check configuration
+  - Verify IcuConfig values and create IcuClient(ICU).
+  - Ensure .css/.js files are included
+  - Startup code (i.e. AddIcuBlazor(..)) has been setup correctly
+    => Must delay BlazorSyled setup in TestRunner
+       - because AddIcuBlazor() was not called
+- Start Test Execution
+  - Load all<IcuTestSuite/> children
+  - Pass values to IcuTestRunner
+*@
+
+@code {
+
+        [Parameter] public int Width { get; set; } = 1000;
+        [Parameter] public RenderFragment ChildContent { get; set; }
+        [Parameter] public Assembly Assembly { get; set; }
+
+        IcuClient ICU = null;
+        List<IcuTestSuite> Suites = new List<IcuTestSuite>();
+        IcuException icu_error;
+        string status = "";
+        IcuTestRunner runner;
+
+        //Assembly get_assembly() {
+        //    if (Assembly != null) return (Assembly);
+        //    //if (Parent != null) return (Parent.GetType().Assembly);
+        //    throw new IcuException(
+        //        "No IcuTestSuites or Assembly defined",
+        //        "1) Try <IcuTestViewer Assembly=\"@this.GetType().Assembly\">\n");
+        //}
+        //void NoSuitesFound() {
+        //    var asm = get_assembly();
+        //    var suites = ICU.ss.AllSubclassOf<IcuTestSuite>(asm).ToList();
+        //    if (suites.Count == 0)
+        //        throw new IcuException("Could not find any IcuTestSuites", "");
+        //    var sb = new System.Text.StringBuilder();
+        //    sb.AppendLine("      <IcuTestViewer>");
+        //    suites.ForEach(tp => sb.AppendLine($"         <{tp.Name} />"));
+        //    sb.AppendLine("      </IcuTestViewer>");
+        //    var code = sb.ToString();
+        //    throw new IcuException("Unspecified Suites",
+        //        $"1) Try adding this to your main test page\n{code}\n");
+        //}
+
+        internal void AddSuite(IcuTestSuite suite) {
+            DBG.Log($"Adding Suite: <{suite.GetType().FullName} />");
+            Suites.Add(suite);
+        }
+
+        async Task LoadTestSuites() {
+            // Ensure all ChildContent suites are added to TestRunner.Suites.
+            StateHasChanged();
+            await Task.Delay(100);
+            if (Suites.Count == 0) {
+                //NoSuitesFound();
+                throw new IcuException("<IcuTestViewer> is empty.", "");
+            }
+        }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) {
+            try {
+                ICU = IcuClient.Fetch(sp);
+                ICU.ParseUri(nav.Uri);
+                await ICU.InitAsync();
+                await LoadTestSuites();
+                runner.Run(Suites);
+            } catch (Exception e) {
+                DBG.Err($"\n{e}");
+                icu_error = e as IcuException;
+                status = e.ToString();
+                StateHasChanged();
+            }
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    string ebox = "background:#fee;padding:0.5em;border:.1em solid red;";
+}
+
+<div class="icu"> @* --- use ".icu" css namespace ------------ *@
+    @if (icu_error != null) {
+        <div style="@ebox">
+            <pre><h5>@icu_error.Message</h5>@icu_error.Help</pre>
+            <pre style="font-size:80%">@icu_error.StackTrace</pre>
+        </div>        
+        @*<IcuHelp ex="@icu_error" />*@
+    } else if (!String.IsNullOrEmpty(status)) {
+        <div style="font-size:80%;@ebox">
+            <pre>@status</pre>
+        </div>
+    } else if (ICU != null) {
+        <CascadingValue Value="@this" Name="ICUViewer" IsFixed="true">
+            <CascadingValue Value="@ICU" Name="ICU" IsFixed="true">
+                <IcuVerify />
+                @ChildContent
+                <IcuTestRunner @ref="runner" Width="@Width" />
+            </CascadingValue>
+        </CascadingValue>
+    }
+</div>

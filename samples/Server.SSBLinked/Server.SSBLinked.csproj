@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CSB\CSB.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Watch Include="..\..\**\*.razor" />
+    <Watch Include="..\..\**\*.cs" />
+    <Watch Include="..\..\**\*.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IcuBlazor.Server" Version="0.9.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,32 @@
+﻿@page "/WeatherCounter"
+
+<p>
+Temp. (C) : @data.TempC<br/>
+Temp. (F) : @data.TempF<br/>
+Summary : @data.Summary<br/>
+</p>
+
+<button class="btn btn-primary" @onclick="()=>IncrementCount(-1)">Colder</button>
+<button class="btn btn-danger" @onclick="()=>IncrementCount(1)">Hotter</button>
+
+@code {
+    public Weather data = new Weather();
+
+    private void IncrementCount(int change)
+    {
+        data.TempC += change;
+    }
+
+    public class Weather
+    {
+        public int TempC { get; set; }
+
+        public int TempF {
+            get { return 32 + (int)(TempC / 0.5556); }
+        }
+        public string Summary {
+            get { return (TempC <= 0 ? "Cool" : "Nice"); }
+        }
+    }
+
+}

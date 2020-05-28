@@ -1,0 +1,29 @@
+﻿@page "/MyTests/TestWeatherCounter"
+@inherits IcuBlazor.IcuTestSuite
+
+@using CSB.Pages
+
+@* Setup harness for Component Under Test (CUT)
+   - set style just to make it distinctive  *@
+<IcuTestDiv Suite="@this" Width="300" style="background:#ffc;border:1px dashed red;">
+    <p>Any Html or Blazor content!</p>
+    <WeatherCounter @ref="myComponent"/>
+</IcuTestDiv>
+
+@code {
+
+    WeatherCounter myComponent;
+
+    public async Task Test_Counter_UI(Checker cx)
+    {
+        await CompareDiv(cx, "init");
+
+        var button = await UI.Find("button", "Hotter");
+        await UI.Click(button);
+        await UI.Click(button);
+        await CompareDiv(cx, "click_twice");
+
+        cx.True(myComponent.data.TempC == 2, "Directly test component!");
+    }
+
+}

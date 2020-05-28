@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Authors>NXS-7 Software Inc.</Authors>
+    <Version>0.9.2</Version>
+    <Company>NXS-7 Software Inc.</Company>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ray440/IcuBlazor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ray440/IcuBlazor</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Util.fs" />
+    <Compile Include="Proc.fs" />
+    <Compile Include="Models.fs" />
+    <Compile Include="Execution.fs" />
+    <Compile Include="WebRPC.fs" />
+    <Compile Include="IcuSession.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DiffPlex" Version="1.6.2" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="3.1.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.2" />
+  </ItemGroup>
+
+</Project>

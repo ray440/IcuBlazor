@@ -1,0 +1,81 @@
+﻿@page "/IcuDiffText"
+
+@code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [Parameter] public Checkpoint Check { get; set; }
+
+    string status = "Strings are not equal.";
+    Popup help;
+
+    async Task Click(bool save) {
+        var diff = Check.DiffAssert;
+        try {
+            if (save) {
+                status = "Saving...";
+                diff.Expect = diff.Result;
+                await IcuRpc.SaveTest(ICU.Session, diff);
+                status = "";
+            }
+            Check.SetSaveSkip(save);
+            Check.Verify().Value = false;
+        } catch (Exception) {
+            status = $"Error: Couldn't save Test '{diff.Name}'";
+        }
+        StateHasChanged();
+        ICU.MsgBus.Notify(IcuEvent.NewRefreshView(""));
+    }
+    void SkipTest() => _ = Click(false);
+    void SaveTest() => _ = Click(true);
+
+}
+@{
+    var d = Check.DiffAssert;
+    var pass = (Check.Outcome == OutcomeType.Pass);
+    var ncols = 3;
+    if (pass) {
+        ncols = 1;
+        status = "Strings are equal.";
+    }
+    var cols = $"1fr repeat({ncols}, auto)";
+}
+
+
+<div>
+    @* --- test toolbar ---------------------------------------- *@
+    <GridLayout Cols=@cols class="diff-toolbar">
+        <span> @status </span>
+        @if (!pass) {
+            @if (Check.Verify().Value) {
+                <span class="boxed box-skip" @onclick=SkipTest>Skip Result</span>
+            } else {
+                <span />
+            }
+            <span class="boxed box-pass" @onclick=SaveTest>Save Result</span>
+        }
+        <span class="boxed box-button" @onclick=@(()=>help.ToggleShow())>?</span>
+    </GridLayout>
+
+    <Popup @ref=help Title="Text Diff Help">
+        You can use these shortcut keys:<br/><br/>
+        <GridLayout Cols="auto 1fr">
+            <div>
+                <span class="btn-dark btn-key">L</span>, 
+                <span class="btn-dark btn-key">3</span>, 
+                <span class="btn-dark btn-key">#</span>
+            </div>
+            <div> &nbsp; Show line numbers </div>
+
+            <div>
+                <span class="btn-dark btn-key">D</span>, 
+                <span class="btn-dark btn-key">=</span>
+            </div>
+            <div> &nbsp; Show identical lines </div>
+        </GridLayout>
+        <br/>
+    </Popup>
+
+
+    @* --- test results --------------------------------------- *@
+    <DiffText OldText=@d.Expect NewText=@d.Result />
+</div>
+

@@ -1,0 +1,32 @@
+﻿@page "/IcuSuite"
+
+@code {
+    [Parameter] public TestSuite Suite { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+}
+
+@{
+    var g = Suite;
+    var hdr = g.Name;
+    var kids = g.Kids.Copy();
+    var methods = ICU.Session.FilteredMethods(g.Methods);
+    var show = (methods.Count + kids.Length > 0); // may be filtered out
+    var showHeader = !String.IsNullOrEmpty(hdr);
+}
+
+@if (show) {
+    <Folder Tree="@g" ShowHeader="@showHeader">
+        <HeaderTitle>
+            <OutcomeIcon Outcome="@g.Outcome" />
+            <div class="fillw">&nbsp; @hdr </div>
+        </HeaderTitle>
+        <Detail>
+            @foreach (var m in methods) {
+                <IcuMethod Method="@m" />
+            }
+            @foreach (var k in kids) {
+                <IcuSuite Suite="@k" />
+            }
+        </Detail>
+    </Folder>
+}

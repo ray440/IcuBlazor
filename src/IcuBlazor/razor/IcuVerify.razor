@@ -1,0 +1,32 @@
+﻿@page "/IcuVerify"
+
+@code {
+
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+
+    Checkpoint check = null;
+
+    void HandleEvent(IcuEvent e) {
+        switch (e) {
+        case IcuEvent.Verify cp:
+            check = cp.Item;
+            if (check != null)
+                check.Verify().Value = true;
+            base.InvokeAsync(StateHasChanged);
+            break;
+        default:
+            break;
+        }
+    }
+
+    protected override void OnInitialized() {
+        ICU.MsgBus.DoAction(HandleEvent);
+    }
+}
+
+
+@if (check != null) {
+    <IcuCheckpoint Check="@check" Verify="true"/>
+    <hr />
+}
+

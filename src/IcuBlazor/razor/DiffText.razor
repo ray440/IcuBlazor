@@ -1,0 +1,55 @@
+﻿@page "/DiffText"
+
+@using DiffPlex.DiffBuilder.Model
+@inject UIHelper UI
+
+@code {
+    [Parameter] public string OldText { get; set; }
+    [Parameter] public string NewText { get; set; }
+    [Parameter] public bool ShowLineNums { get; set; }
+    [Parameter] public bool ShowSameLines { get; set; } = true;
+    public SideBySideDiffModel diffModel;
+    DiffTextPane oldp, newp;
+    bool same = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender && oldp != null) {
+            var _ = await UI.JS.SyncScrollbars(oldp.panel, newp.panel);
+        }
+    }
+    protected override Task OnInitializedAsync() {
+        same = OldText.Equals(NewText);
+        diffModel = DiffService.GetDiffs(OldText, NewText);
+        return base.OnInitializedAsync();
+    }
+
+    void KeyWasPressed(KeyboardEventArgs args) {
+        var k = args.Key.ToLower();
+        if (k == "3" || k == "l" || k == "#") {
+            ShowLineNums = !ShowLineNums;
+        }
+        if (!same && (k == "d" || k == "=")) {
+            ShowSameLines = !ShowSameLines;
+        }
+    }
+}
+
+
+<Styled>
+.icu .textdiff-container {
+    width: 100%;
+    height: 100%;
+    color: black;
+    background: @XSS.darker(0.1);
+    font-family: [--font-fixed];
+    font-size: 80%;
+}
+</Styled>
+
+<GridLayout Cols="@(same ? "1fr" : "1fr 1fr")" 
+            class="textdiff-container" @onkeydown="KeyWasPressed">
+    @if (!same) {
+        <DiffTextPane @ref="oldp" Old="true" Parent="this"/>
+    }
+    <DiffTextPane @ref="newp" Old="false" Parent="this"/>
+</GridLayout>

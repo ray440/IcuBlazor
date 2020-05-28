@@ -1,0 +1,151 @@
+﻿@page "/IcuToolbar"
+@inject NavigationManager Nav
+
+@code {
+
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+
+    [Parameter] public EventCallback<bool> OnUpdate { get; set; }
+    void UpdateParent() { // Parent is typically TestRunner
+        base.InvokeAsync(()=>OnUpdate.InvokeAsync(true)); 
+    } 
+
+    public string error = "";
+    public string status = "";
+    public bool showSettings = false;
+    public bool running = true;
+    int numTests = 1, doneTests = 0;
+
+    [Parameter]
+    public string Filter {
+        get { return ICU.Config.Filter; }
+        set {
+            var f = String.IsNullOrWhiteSpace(value) ? "" : value.ToLower();
+            ICU.Config.Filter = f;
+            _ = ICU.LocalSet("Filter", f);
+            UpdateParent();
+        }
+    }
+
+    void Abort(string msg) {
+        error = msg;
+        ICU.Session.AbortRun(msg);
+        running = false;
+        UpdateParent();
+    }
+
+    void ToggleExecution() {
+        if (running) {
+            Abort("Execution canceled.");
+        } else {
+            Nav.NavigateTo(Nav.Uri, true); // reload page
+        }
+    }
+
+    public void ToggleShowSettings() {
+        showSettings = !showSettings;
+        UpdateParent();
+    }
+
+    void HandleEvent(IcuEvent e) {
+        switch (e) {
+        case IcuEvent.AddTest et:
+            status = et.Item.Path;
+            numTests++;
+            //DBG.Log($"IcuEvent AddTest '{numTests}   {et.Item.Path}'");
+            break;
+        case IcuEvent.MethodStart em:
+            //DBG.Log($"IcuEvent MethodStart '{em.Item.Name}'");
+            status = em.Item.Path;
+            break;
+        case IcuEvent.MethodEnd em:
+            var m = em.Item;
+            doneTests++;
+            //base.InvokeAsync(StateHasChanged);
+            //DBG.Log($"IcuEvent MethodEnd '{doneTests}    {m.Name}' => '{m.Outcome}'");
+            break;
+        case IcuEvent.SuiteStart pg:
+            //DBG.Log($"IcuEvent SuiteStart '{pg.Item.GetType().Name}'");
+            break;
+        case IcuEvent.SuiteEnd pg:
+            //DBG.Log($"IcuEvent SuiteEnd '{pg.Item.GetType().Name}'");
+            break;
+        case IcuEvent.RunStart pg:
+            //DBG.Log($"IcuEvent RunStart '{pg.Item.GetType().Name}'");
+            running = true;
+            break;
+        case IcuEvent.RunEnd pg:
+            //DBG.Log($"IcuEvent RunEnd '{pg.Item.GetType().Name}'");
+            status = "";
+            doneTests++;
+            running = false;
+            base.InvokeAsync(StateHasChanged);
+            break;
+        case IcuEvent.Error ex:
+            //DBG.Log($"IcuEvent Error '{ex.Item}'");
+            Abort(ex.Item.ToString());
+            break;
+        case IcuEvent.RefreshView x:
+            UpdateParent();
+            break;
+        default:
+            break;
+        }
+    }
+
+    protected override void OnInitialized() {
+        ICU.MsgBus.DoAction(HandleEvent);
+    }
+}
+
+<Styled>
+.icu .main-toolbar {
+    background: #8af;
+    border-left: 0.3em #28f solid;
+    align-items: center;
+}
+
+.icu .filter-input {
+    border-width: 0;
+    padding: 0.2em 0.5em;
+}
+
+.icu .tb-btn {
+    font-size: 120%;
+    width: 2em;
+    text-align: center;
+    padding: 0.3em;
+    background: @XSS.lighter(0.1);
+}
+.icu .tb-btn:hover {
+    background: @XSS.lighter(0.4);
+}
+.icu .prog-bar {
+    height: 0.3em;
+    @*height: 100%;*@
+    border-radius: 0px;
+    background: @XSS.lighter(0.3);
+}
+</Styled>
+
+@{ 
+    var p = 100.0*doneTests/numTests;
+    var exec = running ? "oi-ban" : "oi-reload";
+}
+
+<GridLayout Cols="1fr repeat(3, auto)" class="main-toolbar">
+    <div>@status
+        @* -- calling StateHasChanged() above confuses BlazorStyled (sometimes).
+        <div class="progress prog-bar">
+            <div class="progress-bar bg-success" role="progressbar"
+                style="width: @p%" aria-valuenow="@p"
+                aria-valuemin="0" aria-valuemax="100"></div>
+        </div>*@
+    </div>
+
+    <input class="filter-input" type="text" placeholder="Filter..." @bind="Filter" />
+    @*<span class="oi oi-magnifying-glass tb-btn"></span>*@
+
+    <span class="oi @exec tb-btn" @onclick="ToggleExecution"></span>
+    <span class="oi oi-cog tb-btn" @onclick="ToggleShowSettings"></span>
+</GridLayout>

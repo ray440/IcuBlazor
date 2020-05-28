@@ -1,0 +1,45 @@
+﻿@page "/IcuMethod"
+
+@code {
+    [Parameter] public TestMethod Method { get; set; }
+
+    protected override void OnInitialized() {
+        Method.OnChange.DoAction((msg) => {
+            //DBG.Log($"IcuMethod.StateChanged {M.TestName} {msg.GetType().FullName}");
+            base.InvokeAsync(StateHasChanged);
+        });
+    }
+}
+@{
+    var M = Method;
+    var checks = M.Kids.Copy(); // could be modified while rendering
+    int NPass = checks.Count(tr => tr.Outcome == OutcomeType.Pass);
+    int NTests = checks.Length;
+    int NFail = NTests - NPass;
+
+    var rt = (int)M.RunTime;
+    var hasDetail = (NTests > 0);
+}
+
+<Styled>
+.icu .test-method {
+    background: @XSS.darker(0.02);
+    margin-bottom: 0.2em;
+}
+</Styled>
+
+<div class="test-method fillw">
+    <Folder Tree="@M" HasDetail="@hasDetail">
+        <HeaderTitle>
+            <OutcomeIcon Outcome="@M.CalcOutcome()" />
+            <div class="flex-grow">&nbsp; @M.Name</div>
+            @*<div class="flex-grow">@M.Name (@NPass/@NTests)</div>*@
+            <div> @(rt < 1 ? "< 1" : $"{rt}") ms</div>
+        </HeaderTitle>
+        <Detail>
+            @foreach (var c in checks) {
+                <IcuCheckpoint Check="@c" />
+            }
+        </Detail>
+    </Folder>
+</div>

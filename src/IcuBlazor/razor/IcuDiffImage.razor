@@ -1,0 +1,192 @@
+﻿@page "/IcuDiffImage"
+
+@inject UIHelper UI
+
+@code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [Parameter] public Checkpoint Check { get; set; }
+    Popup help;
+
+    string status = "Snapshots are not equal.";
+    string currUrl = "", newUrl = "", diffUrl = "";
+    string shownUrl = "";
+    string pixelate = "";
+    string browser_pix = "";
+    string pzid = BaseUtils.PrefixedID("pzid-");
+    int ekey = -1;
+
+    void ShowImage(string url) {
+        if (shownUrl != url)
+            shownUrl = url;
+    }
+    void HoverNew()  => ShowImage(newUrl);
+    void HoverCurr() => ShowImage(currUrl);
+    void HoverDiff() => ShowImage(diffUrl);
+
+    async Task Click(bool save) {
+        var diff = Check.DiffAssert;
+        try {
+            if (save) {
+                status = "Saving...";
+                await IcuRpc.SaveTest(ICU.Session, diff);
+                status = "";
+            }
+            Check.SetSaveSkip(save);
+            Check.Verify().Value = false; // continue processing other tests
+        } catch (Exception e) {
+            status = $"Error: Couldn't save Test '{diff.Name}' \n   {e.Message}";
+        }
+        StateHasChanged();
+        ICU.MsgBus.Notify(IcuEvent.NewRefreshView(""));
+    }
+    void SkipTest()  => _ = Click(false);
+    void SaveTest()  => _ = Click(true);
+
+    void KeyWasPressed(KeyboardEventArgs args) {
+        var k = args.Key.ToLower();
+        switch (k) {
+        case "1": HoverNew(); break;
+        case "2": HoverCurr(); break;
+        case "3": HoverDiff(); break;
+        case "0": case "r":
+            _ = UI.JS.PanZoomReset(ekey);
+            break;
+        case "p":
+            // should do this automatically if scale > 2
+            pixelate = (pixelate.Length==0) ? "pixelate" : "";
+            break;
+        default:
+            break;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender) {
+            ekey = await UI.JS.PanZoomInit("#"+pzid);
+            browser_pix = (ENV.Browser.Equals("Chrome"))
+                          ? "pixelated" : "crisp-edges";
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+}
+@{
+    var pass = (Check.Outcome == OutcomeType.Pass);
+    var isNew = (Check.Outcome == OutcomeType.New);
+    var dir = ICU.Config.TestDir;
+    var tname = Check.DiffAssert.Name;
+    var ncols = 6;
+    newUrl  = IcuIO.NewImageFile(dir, tname);
+    if (pass) {
+        status = "Snapshots are equal.";
+        shownUrl = newUrl;
+        ncols = 1;
+    } else if (String.IsNullOrEmpty(shownUrl)) {
+        currUrl = IcuIO.CurrImageFile(dir, tname);
+        diffUrl = IcuIO.DiffImageFile(dir, tname);
+        shownUrl = newUrl;
+    }
+    var cols = $"1fr repeat({ncols}, auto)";
+}
+
+<Styled>
+.icu .image-holder {
+    background: @XSS.darker(0.3);
+    overflow: auto;
+    height: auto;
+    max-height: 30em;
+    resize: vertical;
+    padding: 0.4em;
+    display:grid;
+}
+.icu .image-holder > img {
+    grid-area: 1 / 1 / 1 / 1;
+    overflow: hidden;
+    width: auto;
+    height: auto;
+}
+.icu .img-sizer {
+    visibility: hidden;
+}
+.icu .pixelate {
+    image-rendering: @browser_pix; 
+}
+</Styled>
+
+
+<div @onkeydown="KeyWasPressed">
+
+    @* --- test toolbar ---------------------------------------- *@
+    <GridLayout Cols="@cols" class="diff-toolbar">
+        <span> @status </span>
+        @if (!pass) {
+            <span class="boxed box-lined" @onmouseover=HoverNew>New</span>
+            if (isNew) {
+                <span />
+                <span />
+            } else {
+                <span class="boxed box-lined" @onmouseover=HoverCurr>Old</span>
+                <span class="boxed box-lined" @onmouseover=HoverDiff>Diff</span>
+            }
+            if (Check.Verify().Value) {
+                <span class="boxed box-skip" @onclick=SkipTest>Skip Image</span>
+            } else {
+                <span />
+            }
+            <span class="boxed box-pass" @onclick=SaveTest>Save Image</span>
+        }
+        <span class="boxed box-button" @onclick=@(()=>help.ToggleShow())>?</span>
+    </GridLayout>
+
+    <Popup @ref=help Title="Image Diff Help">
+        You can use these following interactions:<br/><br/>
+        <GridLayout Cols="auto 1fr">
+            <div>
+                <span class="btn-dark btn-key">Scroll Wheel</span>
+            </div>
+            <div> &nbsp; Zoom in/out image </div>
+            <div>
+                <span class="btn-dark btn-key">+</span> /
+                <span class="btn-dark btn-key">-</span>
+            </div>
+            <div> &nbsp; Zoom in/out image </div>
+
+            <div>
+                <span class="btn-dark btn-key">Mouse Drag</span>
+            </div>
+            <div> &nbsp; Move image</div>
+            <div>
+                <span class="btn-dark btn-key">Arrow Keys</span>
+            </div>
+            <div> &nbsp; Move image</div>
+
+            <div>
+                <span class="btn-dark btn-key">0</span> / 
+                <span class="btn-dark btn-key">R</span>
+            </div>
+            <div> &nbsp; Reset image </div>
+
+            <div>
+                <span class="btn-dark btn-key">P</span>
+            </div>
+            <div> &nbsp; Pixelate/Smooth image </div>
+
+            <div>
+                <span class="btn-dark btn-key">1</span> / 
+                <span class="btn-dark btn-key">2</span> /
+                <span class="btn-dark btn-key">3</span>
+            </div>
+            <div> &nbsp; Show New/Old/Diff image </div>
+        </GridLayout>
+        <br/>
+    </Popup>
+
+
+
+    @* --- test results --------------------------------------- *@
+    <div class="image-holder">
+        <img id="@pzid" class="icu-image @pixelate" src="@shownUrl" />
+        <img class="icu-image img-sizer" src="@currUrl" />
+        <img class="icu-image img-sizer" src="@newUrl"/>
+    </div>
+</div>

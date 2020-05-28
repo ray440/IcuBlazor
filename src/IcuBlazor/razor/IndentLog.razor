@@ -1,0 +1,15 @@
+﻿@page "/IndentLog"
+
+@code {
+    [Parameter] public string msg { get; set; }
+    [Parameter] public string xmsg { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}
+
+@if (String.IsNullOrWhiteSpace(msg)) {
+    @ChildContent
+} else {
+    DBG.Indent(3, msg + " {");
+    @ChildContent
+    DBG.Indent(-3, "}");
+}

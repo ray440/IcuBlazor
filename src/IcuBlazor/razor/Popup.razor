@@ -1,0 +1,42 @@
+﻿@page "/Popup"
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public bool Show { get; set; } = false;
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    public void ToggleShow() {
+        Show = !Show;
+        StateHasChanged();
+    }
+
+}
+
+<Styled>
+.icu .popup {
+    border-radius: 0px;
+    border: 0.2em solid #ccc;
+    background:#eee;
+}
+</Styled>
+
+@if (Show) {
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <GridLayout Cols="1fr auto" class="modal-content popup">
+                    
+                <h5 class="modal-title">@Title</h5>
+                <button type="button" @onclick="ToggleShow" 
+                        class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+                <span/>
+
+            </GridLayout>
+        </div>
+    </div>
+}

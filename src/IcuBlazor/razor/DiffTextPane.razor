@@ -1,0 +1,60 @@
+﻿@page "/DiffTextPane"
+
+@using DiffPlex.DiffBuilder.Model
+@inject UIHelper UI
+
+@code {
+    [Parameter] public bool Old { get; set; }
+    [Parameter] public DiffText Parent { get; set; }
+    public ElementReference panel;
+
+    ChangeType prev = ChangeType.Imaginary;
+    int displayLine(ChangeType lt) {
+        var j = 1;
+        if (Parent.ShowSameLines || lt != ChangeType.Unchanged) {
+            j = 1; // just show-line
+        } else { // drop-line-entirely (0) or show-first-line(-1 as `:`)
+            j = (prev == ChangeType.Unchanged) ? 0 : -1;
+        }
+        prev = lt;
+        return j;
+    }
+}
+@{
+    var dm = Parent.diffModel;
+    var (text, pane) = Old 
+        ? (dm.OldText, "old-pane") 
+        : (dm.NewText, "new-pane");
+}
+
+<Styled>
+.icu .diff-pane {
+    height: auto;
+    max-height: 30em;
+    padding: 0.25em;
+    background: #fff;
+}
+.icu .old-pane {  @*  vertical scrollbar tied to new-pane  *@
+    overflow: auto hidden;
+}
+.icu .new-pane {
+    overflow: auto auto;
+}
+.icu .diff-pane .lineNumber {
+    color: #aaa;
+    background-color: #fff;
+    text-align: right;
+}
+</Styled>
+
+<div @ref="panel" class="diff-pane @pane" tabindex="0">
+    @foreach (var ln in text.Lines) {
+        var show = displayLine(ln.Type);
+        if (show == 1) {
+            <DiffLine Model="ln" Old="@Old" LineNums="@Parent.ShowLineNums" />
+        } else if (show == -1) {
+            <span class="lineNumber"> &nbsp; &nbsp; : </span>
+        } /* else drop line entirely */
+    }
+    <br />
+</div>

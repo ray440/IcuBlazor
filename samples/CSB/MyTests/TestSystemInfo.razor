@@ -1,0 +1,43 @@
+﻿@page "/MyTests/TestSystemInfo"
+@inherits IcuBlazor.IcuTestSuite
+
+@using System.Globalization
+
+@code {
+
+    // Check system environment to ensure that your tests are consistent.
+    // Please add or remove environment variables & system checks that
+    // may affect the consistency of your system tests.
+    public async Task Test_SystemInfo(Checker check) {
+        var s = "";
+
+        // Some tests may fail due to browser differences (:o shocker!)
+        s += $"Browser Detected   = {IcuBlazor.ENV.Browser}\n";
+        //var ua = await this.UI.EvalJson<string>("navigator.userAgent");
+        //s += $"navigator.userAgent  = {ua}\n";
+
+        // Make sure we have consistent image tests
+        var zoom = await this.UI.EvalJson<double>("window.devicePixelRatio");
+        s += $"Browser Zoom       = {zoom}\n";
+        check.Equal(1.0, zoom, "Browser zoom should be 1.0 for consistent tests");
+
+        //There *should*be no differences between CSB and SSB...
+        var csb = IcuBlazor.ENV.IsWasm ? "CSB" : "SSB";
+        s += $"ICU Project Type   = {csb}\n";
+
+        // Other environment variables
+        s += $"User Name          = {Environment.UserName}\n";
+        s += $"Machine Name       = {Environment.MachineName}\n";
+        s += $"Culture Info       = {CultureInfo.CurrentCulture.DisplayName}\n";
+        s += $"Current Directory  = {Environment.CurrentDirectory}\n";
+        //s += $"ICU WWWroot        = {Config.WWWroot}\n";
+        //s += $"ICU TestDir        = {Config.TestDir}\n";
+
+        check.Log("Info\\env_values", s, "Environment Values");
+    }
+
+    public void TestHealth() {
+        // ping external services. Web Server, DB, ...
+    }
+
+}

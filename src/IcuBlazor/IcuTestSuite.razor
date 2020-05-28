@@ -1,0 +1,138 @@
+﻿@page "/IcuTestSuite"
+
+@using IcuBlazor
+
+
+@code {
+
+    [CascadingParameter(Name = "ICUViewer")] IcuTestViewer Parent { get; set; }
+    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
+    IcuSession ss;
+
+    public string SuiteName = "";
+    public bool Running = false;
+
+    /// <summary>
+    /// Interface for UI automation.
+    /// </summary>
+    public UIHelper UI { get => ICU.UI; }
+
+    /// <summary>
+    /// This method is called before the Suite starts.
+    /// Override this method to add any test initialization code.
+    /// </summary>
+    public virtual void OnSuiteStart() {
+    }
+
+    /// <summary>
+    /// This method is called after the Suite ends execution.
+    /// Override this method to add any test cleanup code.
+    /// </summary>
+    public virtual void OnSuiteEnd() {
+    }
+
+    public async Task ExecuteTests() {
+        this.OnSuiteStart();
+        await Proc.AsTask(ss.RunTests(this));
+        this.OnSuiteEnd();
+    }
+
+    protected override void OnInitialized() {
+        if (Parent == null) {
+            var tag = this.GetType().Name;
+            throw new IcuException($"Misplaced <{tag}/>",
+                $"IcuTestSuite must be place within an IcuTestViewer.\n"+
+                $"  <IcuTestViewer>\n     <{tag}/>\n  <IcuTestViewer/>\n\n");
+        }
+        Parent.AddSuite(this);
+        ss = ICU.Session;
+        if (String.IsNullOrWhiteSpace(SuiteName))
+            SuiteName = this.GetType().Name;
+
+        base.OnInitialized();
+    }
+
+
+    // --- Test Suite API --------------------
+
+    /// <summary>
+    /// Start a new Test Suite list definition.
+    /// </summary>
+    /// <param name="path">Name of Suite</param>
+    public void Suite(string path) {
+        ss.Suite(path);
+    }
+    /// <summary>
+    /// Add a test to the current Suite.
+    /// </summary>
+    public void Test(string testName, Action<Checker> testf) {
+        ss.Test(testName, this, testf);
+    }
+    /// <summary>
+    /// Add an async test to the current Suite.
+    /// </summary>
+    public void TestTask(string testName, Func<Checker,Task> testf) {
+        ss.TestTask(testName, this, testf);
+    }
+
+    /// <summary>
+    /// Automatically add tests using Reflection.
+    /// </summary>
+    public virtual void AddTests() {
+        ss.AddDefaultTests(this);
+    }
+
+    
+    // --- Rendering & synchronization ----------
+
+    TaskCompletionSource<bool> tcs;
+    /// <summary>
+    /// Call StateHasChanged()
+    /// </summary>
+    public async Task Update() {
+        if (ENV.IsWasm)
+            StateHasChanged();
+        else
+            await base.InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Trigger exection of IcuTestSuite & waits until rendering is done.  
+    /// Should be used sparingly.
+    /// </summary>
+    public async Task<bool> RenderNow() {
+        if (tcs != null)
+            tcs.SetCanceled();
+        tcs = new TaskCompletionSource<bool>();
+        await Update();
+        return await tcs.Task;
+    }
+    async Task SignalRenderEnd() {
+        if (tcs != null) {
+            await Task.Delay(10);
+            if (tcs != null) // yep.
+                tcs.SetResult(true);
+            tcs = null;
+        }
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        base.OnAfterRender(firstRender);
+        await SignalRenderEnd();
+    }
+
+    /// <summary>
+    /// Take a snapshot of a div & compare with previous snapshot.
+    /// </summary>
+    /// <param name="check"></param>
+    /// <param name="testName">Unique testName. Can have a path. (e.g. "init" or "docs/fig23")</param>
+    /// <param name="selector">css selector of div (e.g. "#divID", ".class", "#example .section")</param>
+    public async Task CompareDiv(Checker check, string testName, string selector = "#icu-test-div") {
+        await RenderNow();
+        await Task.Delay(10);
+
+        var name = SuiteName + "\\" + testName;
+        var json_rect = await UI.JS.GetPosition(selector);
+        var args = SnapshotArgs.FromJson(name, json_rect);
+        var _ = await check.Snapshot(args);
+    }
+}

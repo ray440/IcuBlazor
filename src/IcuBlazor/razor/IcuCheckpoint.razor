@@ -1,0 +1,99 @@
+﻿@page "/IcuCheckpoint"
+
+@code {
+    [Parameter] public Checkpoint Check { get; set; }
+    [Parameter] public bool Verify { get; set; } = false;
+}
+@{
+    var CP = Check;
+    var si = OutcomeIcon.OutcomeStat(CP.Outcome);
+    var box = "box-" + si.State;
+    var hasDetail = 
+        (CP.testType.Tag != TestType.Tags.Assert)
+        || !string.IsNullOrWhiteSpace(CP.msg);
+}
+
+<Styled>
+.icu .boxed {
+    padding: 0.1em 0.7em;
+    align-items: center;
+    @*border: 0.2em solid transparent;*@
+    opacity: 0.75;
+}
+.icu .boxed:hover {
+    opacity: 1.0;
+}
+
+.icu .box-lined {
+    border-width: 0px;
+    border-bottom: 0.2em solid @XSS.darker(0.1);
+}
+.icu .box-lined:hover {
+    border-bottom-color: black;
+}
+.icu .box-button {
+    @*background: @XSS.lighter(0.1);*@
+}
+.icu .box-button:hover {
+    background: @XSS.darker(0.1);
+}
+
+.icu .box-pass {
+    background: [--pass-light];
+    @*border-color: [--pass-dark];*@
+}
+.icu .box-fail {
+    background: [--fail-light];
+    @*border-color: [--fail-dark];*@
+}
+.icu .box-skip {
+    background: [--skip-light];
+    @*border-color: [--skip-dark];*@
+}
+.icu .box-unknown {
+    background: [--skip-light];
+    @*border-color: [--skip-dark];*@
+}
+
+.icu .test-assert {
+    font-size: 80%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.icu .diff-toolbar {
+    background: @XSS.darker(0.1);
+    grid-template-columns: 1fr repeat(3, auto);
+    align-items: center;
+}
+.icu .btn-key {
+    font-family: [--font-fixed];
+    border-radius: .25rem;
+    padding: 0.2em 0.4em;
+}
+</Styled>
+
+<div class="@box">
+    <Folder Tree="@CP" HasDetail="@hasDetail" StayOpen="@Verify">
+        <HeaderTitle>
+            <OutcomeIcon Outcome="@CP.Outcome" />&nbsp; @CP.header
+        </HeaderTitle>
+        <Detail>
+            @switch (CP.testType.Tag) {
+            case TestType.Tags.Assert:
+                <div class="test-assert"><pre>@CP.msg</pre></div>
+                break;
+            case TestType.Tags.TextDiff:
+                var d = CP.DiffAssert;
+                <DiffText OldText=@d.Expect NewText=@d.Result />
+                break;
+            case TestType.Tags.LogDiff:
+                <IcuDiffText Check="@CP" />
+                break;
+            case TestType.Tags.ImageDiff:
+                <IcuDiffImage Check="@CP" />
+                break;
+            }
+        </Detail>
+    </Folder>
+</div>

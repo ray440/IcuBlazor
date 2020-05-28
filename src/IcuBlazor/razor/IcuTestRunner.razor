@@ -1,0 +1,117 @@
+﻿@page "/IcuTestRunner"
+
+@inject IStyled Styled
+
+@code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [Parameter] public int Width { get; set; }
+
+    string wstyle = "";
+    List<IcuTestSuite> Suites = new List<IcuTestSuite>();
+    IcuToolbar bar;
+
+    internal void SetTheme() {
+        Styled.SetThemeValue("--font",
+            "Verdana, Tahoma, Geneva, sans-serif");
+        Styled.SetThemeValue("--font-fixed",
+            "'Lucida Console', Monaco, monospace");
+        Styled.SetThemeValue("--accent",      "#66f");
+        Styled.SetThemeValue("--pass-light",  "#efe");
+        Styled.SetThemeValue("--pass-dark",   "#2b2");
+        Styled.SetThemeValue("--fail-light",  "#fee");
+        Styled.SetThemeValue("--fail-dark",   "#b22");
+        Styled.SetThemeValue("--skip-light",  "#ffe");
+        Styled.SetThemeValue("--skip-dark",   "#bb2");
+        Styled.SetThemeValue("--plain",       "#888");
+        Styled.SetThemeValue("--plain-light", "#ddd");
+        Styled.SetThemeValue("--plain-dark",  "#222");
+    }
+    protected override void OnInitialized() {
+        SetTheme();
+    }
+
+    internal void AddTestMethods() {
+        foreach (var sut in Suites) {
+            sut.AddTests();
+        }
+    }
+
+    internal async Task RunAllSuites() {
+        ICU.MsgBus.Notify(IcuEvent.NewRunStart(this));
+
+        var last = Suites.LastOrDefault();
+        var T  = 0L;
+        var t0 = DateTime.Now.Ticks;
+        foreach (var sut in Suites) {
+            DBG.Info("\n");
+            sut.Running = true;
+            var title = $"{sut.GetType().Name}";
+            await sut.ExecuteTests().Log(title);
+            sut.Running = (sut == last); // close all but last
+            await sut.Update();
+
+            var now = DateTime.Now.Ticks;
+            T += (now - t0)/10000;
+            t0 = now;
+            if (T > 500) {
+                T = 0;
+                StateHasChanged();
+                //await Task.Delay(10);
+            }
+        }
+
+        ICU.MsgBus.Notify(IcuEvent.NewRunEnd(this));
+        await Task.Delay(200);
+        StateHasChanged();
+    }
+
+    public void Run(List<IcuTestSuite> suites) {
+        Suites = suites;
+        AddTestMethods();
+        _ = RunAllSuites();
+    }
+
+}
+@{
+    wstyle = $"width:{Width}px";
+    DBG.Log("TestRunner.Render");
+}
+<Styled>
+.icu .fillw {
+    width: 100%;
+}
+.icu .dbg {
+    border: 1px dashed red;
+}
+.icu .flexrow {
+    display: flex;
+    flex-flow: row nowrap;
+}
+.icu .flex-grow {
+    flex: 1 1 0;
+}
+
+.icu .icu-viewer {
+    font-family: [--font];
+    @*width: @XSS.pixels(@Width);*@
+}
+.icu .fixed-font {
+    font-family: [--font-fixed];
+}
+
+</Styled>
+
+<div class="icu-viewer" style="@wstyle">
+    <IcuToolbar @ref="bar" OnUpdate="((x)=>StateHasChanged())"/>
+    @if (bar != null) {
+        @if (!String.IsNullOrWhiteSpace(bar.error)) {
+            <ExceptionBox Msg="@bar.error" />
+        }
+        @if (bar.showSettings) {
+            <IcuSettings OnSubmit="bar.ToggleShowSettings"/>
+        } else {
+            <br/>
+            <IcuSuite Suite="@ICU.Session.TreeRoot" />
+        }
+    }
+</div>

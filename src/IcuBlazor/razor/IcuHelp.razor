@@ -1,0 +1,91 @@
+﻿@page "/IcuHelp/{Topic}"
+
+@using IcuBlazor
+
+@code {
+    [Parameter] public string Topic { get; set; }
+    [Parameter] public Exception ex { get; set; }
+}
+@{
+    void SeeAlso(string tag, string name) {
+        @:@{
+        <span class="also" @onclick=@(() => Topic=tag)>@name</span>
+        }
+    }
+
+    var eh = ex as IcuHelpException;
+    if (String.IsNullOrEmpty(Topic) && eh != null) {
+        Topic = eh.Tag;
+    }
+    var title = Str.TitleCase(Topic);
+    var tag = Topic.ToLower();
+}
+
+<Styled>
+.icu .help {
+    font-family: 'Lucida Console', Monaco, monospace;
+    font-size: 80%;
+    background:#fee;
+    padding:0.5em;
+    border:.1em solid red;
+}
+.help .also {
+    padding: 0.3em;
+    background: @XSS.darker(0.05);
+}
+.help .also:hover {
+    background: @XSS.darker(0.3);
+}
+</Styled>
+
+<div class="help">
+<h3>@title</h3>
+@switch (Topic) {
+case "wwwroot":
+    <p>This is how you use wwwroot</p>
+    break;
+case "install":
+    <p>IcuBalzor apps need a nuget install plue ...</p>
+    <h5>Client-Side Blazor (CSB) </h5>
+    <p>Call AddIcuBlazor()... </p>
+    <pre>
+using IcuBlazor;
+    :
+builder.Services.AddIcuBlazor(new IcuConfig {
+    IcuServer = "https://localhost:44322/",
+    WWWroot = "C:\\..path..\\wwwroot\\",
+    TestDir = "TestFoo",
+});
+</pre>
+
+    <h5>Server-Side Blazor (SSB) </h5>
+    <p></p>
+    break;
+case "config":
+    (string root, string td) = ("", "");
+    if (eh != null) {
+        var c = (IcuConfig) eh.Context;
+        root = c.WWWroot;
+        td = c.TestDir;
+    }
+    <p> @ex.Message </p>
+    <ol>
+        <li>WWWroot(="@root") must be a full path (e.g. c:\dir-path...\wwwroot\)</li>
+        <li>TestDir(="@td") must be below WWWroot</li>
+    </ol>
+    <p>See Also: @{
+        SeeAlso("install", "Installation");
+        SeeAlso("install", "Another");
+    }
+    </p>
+    break;
+default:
+    <p>No help for topic "@Topic"</p>
+    break;
+}
+
+@if (ex != null) {
+    <h3>Stack Trace</h3>
+    <pre style="font-size:80%">@ex.StackTrace</pre>
+}
+</div>
