@@ -2,6 +2,7 @@
 # IcuBlazor
 
 IcuBlazor is a unit testing framework designed to fit naturally within the Blazor ecosystem. It offers modern testing strategies such as text & pixel diffs, UI automation and more.
+![](http://IcuBlazor/Logo?rm)
 
 ### What's in the box?
 - Modern testing API
@@ -16,7 +17,7 @@ IcuBlazor is a unit testing framework designed to fit naturally within the Blazo
     <!-- - zzz Command Line support? -->
 
 ## Usage
-After [configuring your app](docs/config.md) you can create a test suite.  A suite is just a blazor component that inherits `IcuTestSuite`.  Suites contain unit tests which are methods with a `Checker` argument.  Here is a suite defined in *TestExample.razor*.
+After [configuring your app](docs/config.md) you can create a test suite.  A suite is just a blazor component that inherits `IcuTestSuite`.  Suites contain unit tests which are just methods with a `Checker` argument.  Here is a suite defined in *TestExample.razor*.
  
 ```cs {highlight="2,5,11"}
 @page "/MyTests/TestExample"
