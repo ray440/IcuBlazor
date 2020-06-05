@@ -7,7 +7,6 @@
     - [1.4. Running IcuBlazor from Commandline](#14-running-icublazor-from-commandline)
 
 <!-- /TOC -->
-![](http://IcuBlazor/Logo?api)
 
 # 1. Tips and Tricks
 

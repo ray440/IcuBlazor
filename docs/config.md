@@ -8,17 +8,14 @@ To run the samples load the project in Visual Studio, set a startup project like
 You can run the tests from the commandline.  See `samples\*.bat` for examples.
 
 
-# Installation
 
-
-
-## Hosting Architectures
+# Hosting Architectures
 
 IcuBlazor supports both *Client-Side Blazor* (CSB) and *Server-Side Blazor* (SSB).  SSBs can run standalone but standalone CSBs may require an IcuBlazor server.  We can maintain both code-bases with two thin server projects: `Server.CSBLinked` and `Server.SSBLinked`.  These projects use a CSB app as if it was an external library. With this setup we can easily switch between server and wasm execution by changing Visual Studio's *Startup Project*.  Here is a layout of the sample projects:
 
 ![](sample-projs.svg)
 
-## Configuration
+# Configuration
 
 Like other Blazor Libraries, IcuBlazor requires a little configuration.
 1. Add IcuBlazor libs to your project thru the nuget packages.
@@ -48,7 +45,7 @@ Like other Blazor Libraries, IcuBlazor requires a little configuration.
 CSB & SSBs are virtually the same in terms of app code but there are some setup differences that you need to be aware of.
 
 
-### SSB Standalone
+## SSB Standalone
 
 For SSB you will need to modify Startup.cs.
 
@@ -71,7 +68,7 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 
 `TestDir` is a directory below `wwwroot/` where IcuBlazor stores testing data.  And...that's it.  You are ready to [start making tests](../Readme.md#Usage)! 
 
-### CSB Standalone
+## CSB Standalone
 
 You can run a CSB as a standalone web app by settting `IcuConfig.EnableServerTests=false`.  But IcuBlazor will ignore some checks such as `Checker.Log()` & `CompareDiv()`.  These checks need an IcuBlazor server running locally on your machine.  An easy way to add a server is to just use a `Server.CSBLinked` project.
 
@@ -94,7 +91,7 @@ using IcuBlazor;
     }
 ```
 
-### SSBLinked
+## Server.SSBLinked
 
 SSBLinked projects start from the simple SSB template project. Then you need to:
 1. Cleanup the `*.razor` files that clash with the CSB files:
@@ -114,7 +111,7 @@ SSBLinked projects start from the simple SSB template project. Then you need to:
     });
     ```
 
-### CSBLinked
+## Server.CSBLinked
 A CSBLinked project starts as an *ASP hosted CSB* project. Additionally,
 
 1. Make it a thin server. We only need the Server project so remove the Shared & Client sub-projects. 

@@ -2,7 +2,6 @@
 # IcuBlazor
 
 IcuBlazor is a unit testing framework designed to fit naturally within the Blazor ecosystem. It offers modern testing strategies such as text & pixel diffs, UI automation and more.
-![](http://IcuBlazor/Logo?rm)
 
 ### What's in the box?
 - Modern testing API
