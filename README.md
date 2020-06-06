@@ -11,12 +11,11 @@ IcuBlazor is a unit testing framework designed to fit naturally within the Blazo
     - [Direct & Indirect UI Automation](#ui-testing) 
 - A complete test runner
     - [Embed runner in Blazor pages](#usage)
-    - [Supports both Client-Side & Server-Side Blazor apps](docs/config.md)
+    - [Supports both Client-Side & Server-Side Blazor apps](http://icublazor.com/docs/articles/config.html)
     - Debug code while testing
-    <!-- - zzz Command Line support? -->
 
 ## Usage
-After [configuring your app](docs/config.md) you can create a test suite.  A suite is just a blazor component that inherits `IcuTestSuite`.  Suites contain unit tests which are just methods with a `Checker` argument.  Here is a suite defined in *TestExample.razor*.
+After [configuring your app](http://icublazor.com/docs/articles/config.html) you can create a test suite.  A suite is just a blazor component that inherits `IcuTestSuite`.  Suites contain unit tests which are just methods with a `Checker` argument.  Here is a suite defined in *TestExample.razor*.
  
 ```cs {highlight="2,5,11"}
 @page "/MyTests/TestExample"
@@ -115,7 +114,7 @@ UI testing and automation is also very easy. Here's a test suite that checks our
 }
 ```
 
-`<IcuTestDiv>` is basically a `<div>` that defines a test area where you can place your UI component(s).  Here we have styled the div yellow just to discern it's bounds. With the `UI` automation api we locate the button and click it...twice!  [See more automation methods.](docs/api.md)
+`<IcuTestDiv>` is basically a `<div>` that defines a test area where you can place your UI component(s).  Here we have styled the div yellow just to discern it's bounds. With the `UI` automation api we locate the button and click it...twice!  [See more automation methods.](http://icublazor.com/docs/articles/api.html#ui-automation)
 
 `CompareDiv(Checker, image_file)` is the "Assert" operation of UI testing.  It takes a snapshot of the div and compares it **_pixel-by-pixel_** with a previous snapshot (defined by `{image_file}.png`).  IcuBlazor presents an image diff dialog if the images differ.
 
@@ -132,5 +131,5 @@ Additionally, the test component is still at the top of the page--live and click
 **Note:  The current image capture technique is experimental.**  While it works solidly in our test environment we have not tested it everywhere.  (Please let us know if you have any issues.)  `CompareDiv()` assumes the div is not occluded when a snapshot is created. And while the main browsers (Chrome, Firefox, Edge) are supported, there are _still_ browser differences that you may need to account for.
 
 ## Support
-If you discover a bug or have a feature request feel free to open an issue.
+If you discover a bug or have a feature request feel free to [open an issue](https://github.com/ray440/IcuBlazor/issues).
 
