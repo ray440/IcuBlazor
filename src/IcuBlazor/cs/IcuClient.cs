@@ -110,6 +110,13 @@ namespace IcuBlazor
         /// </summary>
         public ValueTask SetValue(ElemRef e, string v) => JS.SetValue(e, v);
 
+        public ValueTask DispatchEvent(ElemRef e, string eType) => JS.DispatchEvent(e, eType);
+
+        // Simulating user actions in the browser is a security issue.
+        // Manually firing events does NOT trigger default actions.
+        // e.g. Firing a KeyEvent on a text field will not update the UI.
+        //public ValueTask SendKeys(ElemRef e, string v) => JS.SendKeys(e, v);
+
         ValueTask<string> Content(ElemRef e, bool html) => JS.Content(e, html);
 
         /// <summary>
@@ -151,8 +158,15 @@ namespace IcuBlazor
                 var elems = await find_elements(sel);
                 var es = await elements_with(elems, withText);
                 var len = es.Length;
-                if (!all && len > 1)
-                    throw new Exception($"Too many matches({len}) for '{sel}'.");
+                if (!all && len != 1) {
+                    var search = $"'{sel}'";
+                    if (withText.Length > 0)
+                        search = search + $" with text '{withText}'";
+                    if (len == 0)
+                        throw new Exception($"No matches for {search}.");
+                    else
+                        throw new Exception($"Too many matches({len}) for {search}.");
+                }
                 return es;
             } catch (TimeoutException) {
                 throw new Exception($"Cannot find element with '{sel}'");

@@ -61,6 +61,11 @@ var IcuTest;
         Automation.prototype.SetValue = function (ekey, v) {
             refs.Get(ekey).value = v;
         };
+        Automation.prototype.DispatchEvent = function (ekey, eventType) {
+            var e = refs.Get(ekey);
+            var event = new Event(eventType);
+            e.dispatchEvent(event);
+        };
         return Automation;
     }());
     var UIutil = /** @class */ (function () {

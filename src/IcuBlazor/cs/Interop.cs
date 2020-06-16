@@ -71,9 +71,15 @@ namespace IcuBlazor
 
         public ValueTask Click(ElemRef e) =>
             JSR.InvokeVoidAsync("IcuTest.Act.Click", e.Key);
+
         public ValueTask SetValue(ElemRef e, string v) =>
             // Useful for setting component values that are private
             JSR.InvokeVoidAsync("IcuTest.Act.SetValue", e.Key, v);
+        public ValueTask DispatchEvent(ElemRef e, string eventType) =>
+            JSR.InvokeVoidAsync("IcuTest.Act.DispatchEvent", e.Key, eventType);
+        //public ValueTask SendKeys(ElemRef e, string v) =>
+        //    JSR.InvokeVoidAsync("IcuTest.Act.SendKeys", e.Key, v);
+
         public ValueTask Cleanup() =>
             JSR.InvokeVoidAsync("IcuTest.Act.Cleanup");
         public ValueTask<string> Content(ElemRef e, bool htmlFormat) =>

@@ -57,7 +57,11 @@ namespace IcuTest { // eslint-disable-line
         public SetValue(ekey: number, v: string) {
             refs.Get<HTMLInputElement>(ekey).value = v;
         }
-
+        public DispatchEvent(ekey: number, eventType: string) {
+            const e = refs.Get<HTMLInputElement>(ekey);
+            const event = new Event(eventType);
+            e.dispatchEvent(event);
+        }
     }
 
     declare function panzoom(e: Element): any;

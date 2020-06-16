@@ -1,0 +1,137 @@
+﻿@page "/MyTests/TestRazorForm"
+@inherits IcuBlazor.IcuTestSuite
+
+@using System
+@using System.ComponentModel.DataAnnotations
+@using CSB.Pages
+
+@* 
+    IcuBlazor can test razor Forms
+*@
+
+<IcuTestDiv Suite="@this" Width="500" style="background:#ffd">
+    <style>
+    .aform {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        grid-gap: 0.2em 0.5em;
+        padding: 1em;
+    }
+    .aform > label {
+        text-align: right;
+        font-weight: bold;
+    }
+    </style>
+    <EditForm @ref="form" class="aform" Model="@starship" 
+              OnValidSubmit="HandleValidSubmit"
+              OnInvalidSubmit="HandleInvalidSubmit">
+
+        <label>Identifier:</label>
+        <InputText class="identifier" @bind-Value="starship.Identifier" />
+
+        <label>Description <br />(optional):</label>
+        <InputTextArea class="desc" @bind-Value="starship.Description" />
+
+        <label>Classification:</label>
+        <div>
+            <InputSelect class="classification" @bind-Value="starship.Classification">
+                <option value="">Select classification ...</option>
+                <option value="Exploration">Exploration</option>
+                <option value="Diplomacy">Diplomacy</option>
+                <option value="Defense">Defense</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => starship.Classification)" />
+        </div>
+
+        <label>Accommodation:</label>
+        <div>
+            <InputNumber class="accommodation" @bind-Value="starship.MaximumAccommodation" />
+            <ValidationMessage For="@(() => starship.MaximumAccommodation)" />
+        </div>
+
+        <label>Approval:</label>
+        <InputCheckbox class="approval" @bind-Value="starship.IsValidatedDesign" />
+
+        <label>Production Date:</label>
+        <InputDate class="productionDate" @bind-Value="starship.ProductionDate" />
+
+        <label></label>
+        <div>
+            <button type="submit">Submit</button>
+        </div>
+
+        <label></label>
+        <div>
+            <DataAnnotationsValidator />
+            @*<ValidationSummary />*@
+        </div>
+    </EditForm>
+
+</IcuTestDiv>
+
+@code {
+    public class Starship
+    {
+        [Required]
+        [StringLength(16, ErrorMessage = "Identifier too long (16 character limit).")]
+        public string Identifier { get; set; }
+
+        public string Description { get; set; }
+
+        [Required]
+        public string Classification { get; set; }
+
+        [Range(1, 100000, ErrorMessage = "Accommodation invalid (1-100000).")]
+        public int MaximumAccommodation { get; set; }
+
+        [Required]
+        [Range(typeof(bool), "true", "true",
+            ErrorMessage = "This form disallows unapproved ships.")]
+        public bool IsValidatedDesign { get; set; }
+
+        [Required]
+        public DateTime ProductionDate { get; set; }
+    }
+
+    Starship starship = new Starship();
+    EditForm form;
+    ElemRef btnSubmit;
+
+    void HandleValidSubmit()
+    {
+        Console.WriteLine("OnValidSubmit");
+    }
+    void HandleInvalidSubmit()
+    {
+        Console.WriteLine("OnInvalidSubmit");
+    }
+
+    public async Task Test_init_form(Checker cx)
+    {
+        await CompareDiv(cx, "empty_form");
+        btnSubmit = await UI.Find("button", "Submit");
+        await UI.Click(btnSubmit);
+        await CompareDiv(cx, "submit_empty_form");
+    }
+
+    public async Task Test_fill_form(Checker cx)
+    {
+        // Set one field by manipulating the UI
+        string shipID = "NCC-1701-A";
+        var inputIdent = await UI.Find(".identifier");
+        await UI.SetValue(inputIdent, shipID);
+        await UI.DispatchEvent(inputIdent, "change"); // trigger binding
+        cx.Equal(shipID, starship.Identifier, "UI->Model binding works");
+
+        // OR set all fields by directly manipulating data model
+        starship.Description = "Round and tubular";
+        starship.Classification = "Exploration";
+        starship.MaximumAccommodation = 100001; // she cannae take anymore cap'n
+        starship.IsValidatedDesign = true;
+        starship.ProductionDate = new DateTime(2286, 11, 25);
+
+        await UI.Click(btnSubmit);
+        await CompareDiv(cx, "submit_filled_form");
+    }
+
+}

@@ -134,7 +134,11 @@
 }
 
 <GridLayout Cols="1fr repeat(3, auto)" class="main-toolbar">
-    <div>@status
+    <div>
+        <a href="http://icublazor.com/" target="_blank">
+            <img loading="lazy" src="http://icublazor.com/docs/images/logo-dark.svg?help_093" style="width:1.5em" alt="IcuBlazor">
+        </a>
+        @status
         @* -- calling StateHasChanged() above confuses BlazorStyled (sometimes).
         <div class="progress prog-bar">
             <div class="progress-bar bg-success" role="progressbar"
