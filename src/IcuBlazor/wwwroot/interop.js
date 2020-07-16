@@ -68,6 +68,125 @@ var IcuTest;
         };
         return Automation;
     }());
+    var PanZoomer = /** @class */ (function () {
+        function PanZoomer(sel) {
+            var _this = this;
+            this.sc = 1.0;
+            this.tx = 0.0;
+            this.ty = 0.0;
+            this.x0 = 0.0;
+            this.y0 = 0.0;
+            this.drag = false;
+            this.setTransform = function (tx, ty, scale) {
+                _this.sc = scale;
+                _this.tx = tx;
+                _this.ty = ty;
+            };
+            this.applyTransform = function () {
+                var s = _this.sc.toString();
+                _this.e.style.transform = "matrix(" +
+                    s + ", 0, 0, " + s + ", " + _this.tx + ", " + _this.ty + ")";
+            };
+            this.applyDelta = function (dx, dy, ds) {
+                if (ds !== 0) {
+                    _this.sc = _this.sc * ((ds < 0) ? 1.1 : 0.9);
+                }
+                if (dx !== 0 || dy !== 0) {
+                    _this.tx += dx;
+                    _this.ty += dy;
+                }
+                _this.applyTransform();
+            };
+            this.onDrag = function (d, on) {
+                _this.drag = on;
+                if (on) { // track events outside element
+                    d.addEventListener("mousemove", _this.onMouseMove);
+                    d.addEventListener("mouseup", _this.onMouseUp);
+                }
+                else {
+                    d.removeEventListener("mousemove", _this.onMouseMove);
+                    d.removeEventListener("mouseup", _this.onMouseUp);
+                }
+            };
+            this.onMouseDown = function (ev) {
+                _this.x0 = ev.clientX;
+                _this.y0 = ev.clientY;
+                _this.onDrag(window.document, true);
+            };
+            this.onMouseUp = function (ev) {
+                _this.onDrag(window.document, false);
+            };
+            this.onMouseMove = function (ev) {
+                if (!_this.drag)
+                    return;
+                var dx = ev.clientX - _this.x0;
+                var dy = ev.clientY - _this.y0;
+                _this.x0 = ev.clientX;
+                _this.y0 = ev.clientY;
+                _this.applyDelta(dx, dy, 0);
+            };
+            this.onWheel = function (ev) {
+                ev.preventDefault();
+                var rect = _this.e.parentElement.getBoundingClientRect();
+                var px = ev.clientX - rect.x;
+                var py = ev.clientY - rect.y;
+                var s = (ev.deltaY < 0) ? 1.1 : 0.9;
+                _this.tx = (1 - s) * px + s * _this.tx;
+                _this.ty = (1 - s) * py + s * _this.ty;
+                _this.sc = s * _this.sc;
+                _this.applyTransform();
+            };
+            this.onKey = function (ev) {
+                ev.preventDefault();
+                var dx = 0, dy = 0, ds = 0;
+                switch (ev.keyCode) {
+                    case 37:
+                        dx = -1;
+                        break; // left
+                    case 39:
+                        dx = 1;
+                        break; // right
+                    case 38:
+                        dy = -1;
+                        break; // up
+                    case 40:
+                        dy = 1;
+                        break; // down
+                    case 109: // subtract `-`
+                    case 189:
+                        ds = 1;
+                        break; // underscore  `_`
+                    case 107: // equal `=` 
+                    case 187:
+                        ds = -1;
+                        break; // plus `+`
+                    case 48: // '0'
+                    case 114:
+                    case 82: // 'r' to reset
+                        _this.setTransform(0.0, 0.0, 1.0);
+                        break;
+                    default: break;
+                }
+                var mag = 20;
+                _this.applyDelta(dx * mag, dy * mag, ds);
+            };
+            var e = this.e = Automation.findOne(sel);
+            if (!e)
+                throw "Can't find element'" + sel + "'";
+            var opt = { passive: false };
+            e.addEventListener("mousedown", this.onMouseDown, opt);
+            e.addEventListener("mouseup", this.onMouseUp, opt);
+            e.addEventListener("mousemove", this.onMouseMove, opt);
+            e.addEventListener("keydown", this.onKey, opt);
+            e.addEventListener("wheel", this.onWheel, opt);
+            e.draggable = false;
+            e.setAttribute("tabindex", "0");
+            e.style.outline = "none";
+            e.style.transformOrigin = "0 0 0";
+            this.applyTransform();
+        }
+        return PanZoomer;
+    }());
     var UIutil = /** @class */ (function () {
         function UIutil() {
         }
@@ -84,8 +203,6 @@ var IcuTest;
             return false;
         };
         UIutil.prototype.IsInstalled = function (cssSheet) {
-            if (!window["panzoom"])
-                throw "Can't find panzoom.js";
             return (this.getStyleSheet(cssSheet));
         };
         UIutil.prototype.InitBrowserCapture = function (title, start) {
@@ -95,7 +212,7 @@ var IcuTest;
                 //    throw ("Browser zoom is " + r + ".  For consistent tests it must be 1.0");
                 var prev = document.title;
                 document.title = title;
-                document.body.insertAdjacentHTML('afterbegin', '<div id="icu_cap" style="border-top: 2px solid #628319;"></div>');
+                document.body.insertAdjacentHTML("afterbegin", '<div id="icu_cap" style="border-top: 2px solid #628319;"></div>');
                 return prev;
             }
             else {
@@ -121,15 +238,7 @@ var IcuTest;
             return true;
         };
         UIutil.prototype.PanZoomInit = function (sel) {
-            // can use +/- keys zoom, arrow keys to pan
-            var e = Automation.findOne(sel);
-            var pz = panzoom(e);
-            return refs.Add(pz);
-        };
-        UIutil.prototype.PanZoomReset = function (ekey) {
-            var pz = refs.Get(ekey);
-            pz.zoomAbs(0, 0, 1);
-            pz.moveTo(0, 0);
+            new PanZoomer(sel);
         };
         return UIutil;
     }());

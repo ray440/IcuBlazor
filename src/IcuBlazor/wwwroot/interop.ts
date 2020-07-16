@@ -64,7 +64,117 @@ namespace IcuTest { // eslint-disable-line
         }
     }
 
-    declare function panzoom(e: Element): any;
+    class PanZoomer {
+        private sc = 1.0;
+        private tx = 0.0;
+        private ty = 0.0;
+        private x0 = 0.0;
+        private y0 = 0.0;
+        private e: HTMLElement;
+        private drag = false;
+
+        setTransform = (tx: number, ty: number, scale: number) => {
+            this.sc = scale;
+            this.tx = tx;
+            this.ty = ty;
+        }
+        applyTransform = () => {
+            const s = this.sc.toString();
+            this.e.style.transform = "matrix(" +
+                s + ", 0, 0, " + s + ", " + this.tx + ", " + this.ty + ")";
+        }
+        applyDelta = (dx: number, dy: number, ds: number) => {
+            if (ds !== 0) {
+                this.sc = this.sc * ((ds < 0) ? 1.1 : 0.9);
+            }
+            if (dx !== 0 || dy !== 0) {
+                this.tx += dx;
+                this.ty += dy;
+            }
+            this.applyTransform();
+        }
+
+        onDrag = (d: Document, on: boolean) => {
+            this.drag = on;
+            if (on) {  // track events outside element
+                d.addEventListener("mousemove", this.onMouseMove);
+                d.addEventListener("mouseup", this.onMouseUp);
+            } else {
+                d.removeEventListener("mousemove", this.onMouseMove);
+                d.removeEventListener("mouseup", this.onMouseUp);
+            }
+        }
+        onMouseDown = (ev: MouseEvent) => {
+            this.x0 = ev.clientX;
+            this.y0 = ev.clientY;
+            this.onDrag(window.document, true);
+        }
+        onMouseUp = (ev: MouseEvent) => {
+            this.onDrag(window.document, false);
+        }
+        onMouseMove = (ev: MouseEvent) => {
+            if (!this.drag) return;
+            const dx = ev.clientX - this.x0;
+            const dy = ev.clientY - this.y0;
+            this.x0 = ev.clientX;
+            this.y0 = ev.clientY;
+            this.applyDelta(dx, dy, 0);
+        }
+        onWheel = (ev: WheelEvent) => {
+            ev.preventDefault();
+
+            const rect = this.e.parentElement.getBoundingClientRect();
+            const px = ev.clientX - rect.x;
+            const py = ev.clientY - rect.y;
+            const s = (ev.deltaY < 0) ? 1.1 : 0.9;
+
+            this.tx = (1 - s) * px + s * this.tx;
+            this.ty = (1 - s) * py + s * this.ty;
+            this.sc = s * this.sc;
+            this.applyTransform();
+        }
+        onKey = (ev: KeyboardEvent) => {
+            ev.preventDefault();
+            let dx = 0, dy = 0, ds = 0;
+            switch (ev.keyCode) {
+                case 37: dx = -1; break;    // left
+                case 39: dx =  1; break;    // right
+                case 38: dy = -1; break;    // up
+                case 40: dy =  1; break;    // down
+                case 109:                   // subtract `-`
+                case 189: ds = 1; break;    // underscore  `_`
+                case 107:                   // equal `=` 
+                case 187: ds = -1; break;   // plus `+`
+                case 48:                    // '0'
+                case 114: case 82:          // 'r' to reset
+                    this.setTransform(0.0, 0.0, 1.0);
+                    break;
+                default: break;
+            }
+            const mag = 20;
+            this.applyDelta(dx*mag, dy*mag, ds);
+        }
+
+        public constructor(sel: string) {
+            const e = this.e = Automation.findOne(sel) as HTMLElement;
+            if (!e)
+                throw "Can't find element'" + sel + "'";
+
+            const opt = { passive: false };
+            e.addEventListener("mousedown", this.onMouseDown, opt);
+            e.addEventListener("mouseup", this.onMouseUp, opt);
+            e.addEventListener("mousemove", this.onMouseMove, opt);
+            e.addEventListener("keydown", this.onKey, opt);
+            e.addEventListener("wheel", this.onWheel, opt);
+            e.draggable = false;
+            e.setAttribute("tabindex", "0");
+            e.style.outline = "none";
+            e.style.transformOrigin = "0 0 0";
+
+            this.applyTransform();
+        }
+
+    }
 
     class UIutil {
 
@@ -81,8 +191,6 @@ namespace IcuTest { // eslint-disable-line
         }
 
         public IsInstalled(cssSheet: string) {
-            if (!window["panzoom"]) 
-                throw "Can't find panzoom.js"
             return (this.getStyleSheet(cssSheet));
         }
         public InitBrowserCapture(title: string, start: boolean) {
@@ -93,7 +201,7 @@ namespace IcuTest { // eslint-disable-line
 
                 const prev = document.title;
                 document.title = title;
-                document.body.insertAdjacentHTML('afterbegin',
+                document.body.insertAdjacentHTML("afterbegin",
                     '<div id="icu_cap" style="border-top: 2px solid #628319;"></div>');
                 return prev;
             } else {
@@ -119,15 +227,7 @@ namespace IcuTest { // eslint-disable-line
             return true;
         }
         public PanZoomInit(sel: string) {
-            // can use +/- keys zoom, arrow keys to pan
-            const e = Automation.findOne(sel);
-            const pz = panzoom(e);
-            return refs.Add(pz);            
-        }
-        public PanZoomReset(ekey: number) {
-            const pz = refs.Get<any>(ekey);
-            pz.zoomAbs(0, 0, 1);
-            pz.moveTo(0, 0);
+            new PanZoomer(sel);
         }
     }
 

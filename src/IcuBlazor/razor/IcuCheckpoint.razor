@@ -1,16 +1,23 @@
 ﻿@page "/IcuCheckpoint"
 
 @code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
     [Parameter] public Checkpoint Check { get; set; }
     [Parameter] public bool Verify { get; set; } = false;
 }
 @{
     var CP = Check;
     var si = OutcomeIcon.OutcomeStat(CP.Outcome);
-    var box = "box-" + si.State;
+    var box = "box box-" + si.State;
     var hasDetail = 
         (CP.testType.Tag != TestType.Tags.Assert)
         || !string.IsNullOrWhiteSpace(CP.msg);
+
+    var phdr = "";
+    if (ICU.Config.ViewLayout == ViewLayout.Flat) {
+        var p = CP.Parent.Value as TestMethod;
+        phdr = (p != null) ? $"{p.Parent.Value.Name}\\{p.Name}: " : "";
+    }
 }
 
 <Styled>
@@ -24,6 +31,13 @@
     opacity: 1.0;
 }
 
+.icu .box {
+    @*margin: 0.2em 0;
+    padding: 0.2em;*@
+    margin: 3px 0;
+    padding: 3px;
+    align-items: center;
+}
 .icu .box-lined {
     border-width: 0px;
     border-bottom: 0.2em solid @XSS.darker(0.1);
@@ -73,10 +87,11 @@
 }
 </Styled>
 
-<div class="@box">
+<div class="@box" @key=@CP.Path>
     <Folder Tree="@CP" HasDetail="@hasDetail" StayOpen="@Verify">
         <HeaderTitle>
-            <OutcomeIcon Outcome="@CP.Outcome" />&nbsp; @CP.header
+            <OutcomeIcon Outcome="@CP.Outcome" />&nbsp;
+            <span class="muted-text">@phdr</span> &nbsp; @CP.header
         </HeaderTitle>
         <Detail>
             @switch (CP.testType.Tag) {

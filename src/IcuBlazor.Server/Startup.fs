@@ -33,7 +33,6 @@ type Startup private () =
             builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader() |> ignore
         services.AddCors(fun options -> options.AddPolicy("AllowAny", cb)) |> ignore
         
-        services.AddIcuServer() |> ignore
 
 
     member __.Configure(app: IApplicationBuilder, env: IWebHostEnvironment) =
@@ -57,5 +56,5 @@ type Startup private () =
             )
             |> ignore
 
-        app.UseIcuServer(env.WebRootPath) |> ignore // IcuBlazor!
+        app.UseIcuServer(env) |> ignore // IcuBlazor!
 

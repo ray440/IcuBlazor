@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <Authors>NXS-7 Software Inc.</Authors>
-    <Version>0.9.3</Version>
+    <Version>1.0.2</Version>
     <Company>NXS-7 Software Inc.</Company>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/ray440/IcuBlazor</PackageProjectUrl>
@@ -11,11 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Primitives.fs" />
     <Compile Include="Util.fs" />
     <Compile Include="Proc.fs" />
     <Compile Include="Models.fs" />
-    <Compile Include="Execution.fs" />
     <Compile Include="WebRPC.fs" />
+    <Compile Include="Execution.fs" />
     <Compile Include="IcuSession.fs" />
   </ItemGroup>
 

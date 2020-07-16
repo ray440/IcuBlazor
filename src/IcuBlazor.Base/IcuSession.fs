@@ -3,15 +3,8 @@
 open System
 open System.Diagnostics
 open System.Runtime.InteropServices
-open IcuCore
-
-module DiffService =
-    open DiffPlex
-    
-    let diffBuilder = Differ() |> DiffBuilder.SideBySideDiffBuilder
-
-    let GetDiffs(oldText, newText) =
-        diffBuilder.BuildDiffModel(oldText, newText, false)
+open IcuBlazor.Models
+open IcuBlazor.IcuCore
 
 // Checker is a facade over TestChecker
 type Checker internal (tc:TestChecker, config:IcuConfig) =
@@ -46,7 +39,7 @@ type Checker internal (tc:TestChecker, config:IcuConfig) =
         tc.IsTrue result msg
 
     let skip_disabled name = 
-        tc.Skip (name + ": Test disabled (IcuConfig.EnableServerTests=false)")
+        tc.Skip (name + ": Test disabled (EnableServer=false)")
 
     let check_text_length (text:string) limit help =
         if (box text <> null) then
@@ -111,7 +104,7 @@ type Checker internal (tc:TestChecker, config:IcuConfig) =
     /// <summary>
     /// Skip a test.
     /// </summary>
-    /// <param name="message">Description of test.</param>
+    /// <param name="message">Reason for skipping a test.</param>
     member __.Skip message = tc.Skip message
 
     /// <summary>
@@ -119,7 +112,7 @@ type Checker internal (tc:TestChecker, config:IcuConfig) =
     /// </summary>
     /// <param name="expected">The expected string.</param>
     /// <param name="actual">The actual runtime string.</param>
-    /// <param name="message">Description of test.</param>
+    /// <param name="message">Description of expected text content.</param>
     member __.Text(expect, result, message, 
         [<Optional; DefaultParameterValue(800)>] limit:int) =
         check_text_length result limit help_Text
@@ -130,12 +123,12 @@ type Checker internal (tc:TestChecker, config:IcuConfig) =
     /// </summary>
     /// <param name="logName">Unique test name of file where text is stored.</param>
     /// <param name="result">The actual runtime string.</param>
-    /// <param name="message">Description of test.</param>
+    /// <param name="message">Description of expected content.</param>
     member __.Log(logName, result, message,
         [<Optional; DefaultParameterValue(3000)>] limit:int) = 
         check_text_length result limit help_Log
         check_filename logName
-        if not config.EnableServerTests 
+        if not config.EnableServer 
         then skip_disabled logName
         else tc.CheckLog logName result message 
 
@@ -145,16 +138,14 @@ type Checker internal (tc:TestChecker, config:IcuConfig) =
     member __.Snapshot args = // not called directly by user
         async {
             check_SnapshotArgs args
-            if not config.EnableServerTests 
+            if not config.EnableServer 
             then skip_disabled args.Name
             else do! tc.Snapshot config.SessionID args
         } |> Async.StartAsTask
 
 // IcuSession is primarily a Facade over 
 // - TestTree, TestExecution & TestChecker which are internal
-type IcuSession(config) =
-
-    let rpc = RPC.NewProxy(config)
+type IcuSession(config, rpc:RPC.IProxy) =
 
     let root = 
         let t = new TestSuite(None, rpc.Config.Name)
@@ -172,13 +163,10 @@ type IcuSession(config) =
         tree.Add testName make_arg thisObj testAsync
 
     let validate_server() =
-        if (String.IsNullOrEmpty(config.WWWroot)) then
-            let h = if ENV.IsWasm 
-                    then ""
-                    else "1) Try calling app.UseIcuServer(env.WebRootPath) in Startup.Configure."
-            raise (new IcuException("IcuConfig.WWWroot is not set", h))
         if (String.IsNullOrEmpty(config.TestDir)) then
             raise (new IcuException("IcuConfig.TestDir is not set", ""))
+        if not (IcuIO.IsSafeDir(config.TestDir)) then
+            raise (new IcuException("IcuConfig.TestDir is not safe", ""))
         if (String.IsNullOrEmpty(config.IcuServer) && ENV.IsWasm) then
             raise (new IcuException("IcuConfig.IcuServer is not set", ""))
 
@@ -193,7 +181,7 @@ type IcuSession(config) =
     member internal __.Rpc = rpc
 
     member __.Validate() =
-        if config.EnableServerTests then
+        if config.EnableServer then
             validate_server()
 
     member __.Suite path = tree.Suite path // define current Suite
@@ -268,16 +256,11 @@ module IcuSessions =
                 |> Seq.toArray
             oldKeys |> Seq.iter(fun k -> sess.Remove(k) |> ignore)
 
-    let Get name (config:IcuConfig) =
-        config.Name <- name
-        let id = config.SessionID
-        match sess.Find id with
-        | Some ss -> ss
-        | _ -> 
-            flush_old()
-            let ss = new IcuSession(config)
-            sess.Set(id, ss)
-            ss
+    let Register (rpc:RPC.IProxy) =
+        flush_old()
+        let ss = new IcuSession(rpc.Config, rpc)
+        sess.Set(rpc.Config.SessionID, ss)
+        ss
 
     let Find id =
         match sess.Find id with

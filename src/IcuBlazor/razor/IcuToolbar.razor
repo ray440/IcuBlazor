@@ -54,6 +54,11 @@
             numTests++;
             //DBG.Log($"IcuEvent AddTest '{numTests}   {et.Item.Path}'");
             break;
+        case IcuEvent.Check ecp: // collect all checkpoints
+            var cp = ecp.Item;
+            //DBG.Log($"IcuEvent Check '{cp.header}'");
+            ICU.CheckGroup.Add(cp);
+            break;
         case IcuEvent.MethodStart em:
             //DBG.Log($"IcuEvent MethodStart '{em.Item.Name}'");
             status = em.Item.Path;
@@ -86,6 +91,7 @@
             Abort(ex.Item.ToString());
             break;
         case IcuEvent.RefreshView x:
+            ICU.RefreshModels();
             UpdateParent();
             break;
         default:
@@ -136,7 +142,8 @@
 <GridLayout Cols="1fr repeat(3, auto)" class="main-toolbar">
     <div>
         <a href="http://icublazor.com/" target="_blank">
-            <img loading="lazy" src="http://icublazor.com/docs/images/logo-dark.svg?help_093" style="width:1.5em" alt="IcuBlazor">
+            <img loading="lazy" alt="IcuBlazor"
+                 src="http://icublazor.com/docs/images/logo-dark.svg?help_093">
         </a>
         @status
         @* -- calling StateHasChanged() above confuses BlazorStyled (sometimes).

@@ -1,6 +1,7 @@
 ﻿namespace IcuBlazor
 
 open System
+open IcuBlazor.Models
 
 module internal IcuCore =
 
@@ -232,7 +233,7 @@ module internal IcuCore =
             match state with
             | Aborted msg-> ()
             | _ ->
-                state <- Executing tm
+                state <- Executing tm                    
                 tm.Outcome <- Running
                 msgBus.Notify(MethodStart tm)
                 do! executeMethod tm
@@ -240,8 +241,15 @@ module internal IcuCore =
                 msgBus.Notify(MethodEnd tm)
         }
 
-        let runTestSuite thisObj tests = async {
+        let runTestSuite thisObj tests = async { 
+            // thisObj is typically IcuTestSuite Blazor Component
             msgBus.Notify(SuiteStart thisObj)
+
+            let suites = 
+                tests 
+                |> Seq.choose TestSuite.FromMethod 
+                |> Seq.distinct |> Seq.toArray
+            suites |> Seq.iter(fun st -> st.Outcome <- OutcomeType.Running)
 
             for tm in tests do
                 let a = runTestMethod tm 
@@ -249,16 +257,14 @@ module internal IcuCore =
                 do! sched.Flush()            
             do! sched.Flush()
 
+            suites |> Seq.iter(fun st -> st.CalcOutcome())
             msgBus.Notify(SuiteEnd thisObj)
         }
 
         let runTests thisObj = async {
             match state with
             | Aborted _ -> () 
-                // Something bad happened. 
-                // User should recompile and/or refresh page
-            | Executing _ -> () 
-                // Only start once--when `Ready`
+            | Executing _ -> () // Only start once--when `Ready`
             | Ready ->
                 let tests = tree.TestsOf thisObj
                 if (tests.Count > 0 ) then
@@ -283,7 +289,7 @@ module internal IcuCore =
         }
 
 
-    type internal TestChecker(exec:TestExecution, rpc:IRPCproxy, m:TestMethod) =
+    type internal TestChecker(exec:TestExecution, rpc:RPC.IProxy, m:TestMethod) =
 
         let abort_check() = 
             match exec.State with

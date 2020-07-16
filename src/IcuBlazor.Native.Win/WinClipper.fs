@@ -11,7 +11,6 @@ type WinClipper(hwnd:IntPtr) =
 
     let find_rendering_area_offset() =
         let bm = Win.CaptureWindow(hwnd, 0.0, 0.0, 100.0, 300.0)
-        XBitmap.Save(@"C:\tmp\moo.png", bm)
         let matches = Array.create 4 0xff628319
         XBitmap.FindPixels(bm, matches)
 

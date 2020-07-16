@@ -3,15 +3,21 @@
 @code {
     [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
     [Parameter] public Checkpoint Check { get; set; }
-
-    string status = "Strings are not equal.";
     Popup help;
 
-    async Task Click(bool save) {
+    string status = "Strings are not equal.";
+    async Task ShowStatus(string msg, int wait)
+    {
+        status = msg;
+        StateHasChanged();
+        await Task.Delay(500);
+    }
+
+    async Task VerifyTest(bool save) {
         var diff = Check.DiffAssert;
         try {
             if (save) {
-                status = "Saving...";
+                await ShowStatus("Saving...", 10);
                 diff.Expect = diff.Result;
                 await IcuRpc.SaveTest(ICU.Session, diff);
                 status = "";
@@ -23,6 +29,15 @@
         }
         StateHasChanged();
         ICU.MsgBus.Notify(IcuEvent.NewRefreshView(""));
+    }
+    async Task Click(bool save)
+    {
+        if (ICU.Config.CanSaveTestData) {
+            await VerifyTest(save);
+        } else {
+            await ShowStatus("Saving...", 500);
+            await ShowStatus("Canceled: Saving test data has been disabled.", 10);
+        }
     }
     void SkipTest() => _ = Click(false);
     void SaveTest() => _ = Click(true);

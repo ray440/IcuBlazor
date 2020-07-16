@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Http;
 using Microsoft.AspNetCore.WebUtilities;
+using static IcuBlazor.BaseUtils;
+using static IcuBlazor.Models;
 
 namespace IcuBlazor
 {
@@ -218,13 +220,24 @@ namespace IcuBlazor
         public IcuSession Session;
         internal UIHelper UI;
         internal MessageBus MsgBus;
-
-        public IcuClient(IcuConfig config, IHttpClientFactory httpFactory)
+        internal CheckpointGrouping CheckGroup = new CheckpointGrouping();
+        
+        public IcuClient(IcuConfig config, RPC.IProxy rpc)
         {
-            Web.clientFactory = httpFactory;
             this.Config = config;
-            this.Session = new IcuSession(this.Config);
+            this.Session = new IcuSession(config, rpc);
             this.MsgBus = Session.MsgBus;
+        }
+
+        internal void RefreshModels()
+        {
+            Session.TreeRoot.CalcOutcome();
+        }
+
+        internal string GetLogo()
+        {
+            return "http://icublazor.com/docs/images/logo-dark.svg?help_102";
+            //return "/logo-dark.svg?help_102";
         }
 
         public string ConfigKey(string part)
@@ -242,14 +255,16 @@ namespace IcuBlazor
         }
         async Task LoadConfig()
         {
+            Config.ViewLayout = await LocalGet("ViewLayout", ViewLayout.Tree);
             Config.Filter = await LocalGet("Filter", "");
-            Config.Interactive = await LocalGet("Interactive", true);
+            Config.Interactive = await LocalGet("Interactive", false);
             Config.StopOnFirstFailure = await LocalGet("StopOnFirstFailure", false);
         }
         internal void SaveConfigVar(string f)
         {
             var _ = f switch
             {
+                "ViewLayout" => LocalSet(f, Config.ViewLayout),
                 "Filter" => LocalSet(f, Config.Filter),
                 "Interactive" => LocalSet(f, Config.Interactive),
                 "StopOnFirstFailure" => LocalSet(f, Config.StopOnFirstFailure),
@@ -274,7 +289,7 @@ namespace IcuBlazor
             await js.CheckIcuInstallation();
             await LoadConfig();
             Session.Validate();
-            if (Config.EnableServerTests)
+            if (Config.EnableServer && Config.CanSaveTestData)
                 await js.InitBrowserCapture(Session);
         }
 

@@ -1,6 +1,7 @@
 ﻿@page "/IcuMethod"
 
 @code {
+    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
     [Parameter] public TestMethod Method { get; set; }
 
     protected override void OnInitialized() {
@@ -9,6 +10,11 @@
             base.InvokeAsync(StateHasChanged);
         });
     }
+
+    void Clicked() {
+        ICU.MsgBus.Notify(IcuEvent.NewSelected(Method));
+    }
+
 }
 @{
     var M = Method;
@@ -18,7 +24,7 @@
     int NFail = NTests - NPass;
 
     var rt = (int)M.RunTime;
-    var hasDetail = (NTests > 0);
+    var hasDetail = (ICU.Config.ViewLayout != ViewLayout.TreeDetail) && (NTests > 0);
 }
 
 <Styled>
@@ -28,10 +34,10 @@
 }
 </Styled>
 
-<div class="test-method fillw">
+<div class="test-method fillw" @onclick="Clicked">
     <Folder Tree="@M" HasDetail="@hasDetail">
         <HeaderTitle>
-            <OutcomeIcon Outcome="@M.CalcOutcome()" />
+            <OutcomeIcon Outcome="@M.Outcome" />
             <div class="flex-grow">&nbsp; @M.Name</div>
             @*<div class="flex-grow">@M.Name (@NPass/@NTests)</div>*@
             <div> @(rt < 1 ? "< 1" : $"{rt}") ms</div>

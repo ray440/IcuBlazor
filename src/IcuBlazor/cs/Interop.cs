@@ -64,10 +64,8 @@ namespace IcuBlazor
         public ValueTask<bool> SyncScrollbars(ElementReference oldp, ElementReference newp) =>
             JSR.InvokeAsync<bool>("IcuTest.UI.SyncScrollbars", oldp, newp);
 
-        public ValueTask<int> PanZoomInit(string sel) =>
-            JSR.InvokeAsync<int>("IcuTest.UI.PanZoomInit", sel);
-        public ValueTask PanZoomReset(int ekey) =>
-            JSR.InvokeVoidAsync("IcuTest.UI.PanZoomReset", ekey);
+        public ValueTask PanZoomInit(string sel) =>
+            JSR.InvokeVoidAsync("IcuTest.UI.PanZoomInit", sel);
 
         public ValueTask Click(ElemRef e) =>
             JSR.InvokeVoidAsync("IcuTest.Act.Click", e.Key);
@@ -96,10 +94,9 @@ namespace IcuBlazor
             } catch (Exception e) {
                 DBG.Err(e.Message); // may be actual script error
                 var (page, cw) = ENV.IsWasm ? ("index.html", "webassembly") : ("_Host.cshtml", "Server");
-                throw new IcuException("Configuration Error",
+                throw new BaseUtils.IcuException("Configuration Error",
                    $"1) You must have these js scripts in {page}.\n"+
                     "    <script src=\"_content/IcuBlazor/interop.js\"></script>\n"+
-                    "    <script src=\"_content/IcuBlazor/panzoom.min.js\"></script>\n"+
                    $"    <script src=\"_framework/blazor.{cw}.js\"></script>\n"
                     );
             }
@@ -115,7 +112,7 @@ namespace IcuBlazor
                 var _ = await InitBrowserCapture(prev, false);
             } catch (JSException e) {
                 if (e.Message.StartsWith("Browser zoom")) {
-                    throw new IcuException("Inconsistent zoom",
+                    throw new BaseUtils.IcuException("Inconsistent zoom",
                        $"1) {e.Message}\n"+
                         "2) Also ensure that your monitor scale is 100%");
                 } else

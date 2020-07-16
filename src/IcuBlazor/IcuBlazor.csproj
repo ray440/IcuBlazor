@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RazorLangVersion>3.0</RazorLangVersion>
-    <Version>0.9.3</Version>
+    <Version>1.0.2</Version>
     <Authors>NXS-7 Software Inc.</Authors>
     <Company>NXS-7 Software Inc.</Company>
     <Description>A simple unit test framework for Blazor components. It offers modern testing strategies such as text diffs, pixel diffs, UI automation and more.</Description>

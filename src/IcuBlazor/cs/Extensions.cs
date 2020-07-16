@@ -1,9 +1,11 @@
 ﻿
+using System;
 using System.Threading.Tasks;
 using System.Net.Http;
 
 using Microsoft.Extensions.DependencyInjection;
 using BlazorStyled;
+using System.Linq;
 
 namespace IcuBlazor
 {
@@ -30,21 +32,23 @@ namespace IcuBlazor
 
     public static partial class IcuBlazorAppBuilderExtensions
     {
-        public static IServiceCollection AddIcuBlazor // for CSB
+        public static IServiceCollection AddIcuBlazor
             (this IServiceCollection services, IcuConfig config)
         {
             services.AddSingleton(config);
             services.AddScoped<UIHelper>();
-            services.AddTransient<IcuClient>(); // one for each TestViewer
+            services.AddTransient<IcuClient>(); // one for each IcuTestViewer
             services.AddBlazorStyled(!true, !true);
-
+            services.AddTransient(typeof(RPC.IProxy), RPC.ProxyType(config));
             services.AddHttpClient("ICUapi");
-            if (config.EnableServerTests) {
-                var sp = services.BuildServiceProvider();
-                Web.Http = sp.GetService<HttpClient>();
-            }
 
+            if (String.IsNullOrEmpty(config.IcuServer)) { // probably server
+            } else { // client
+                var uri = new Uri(config.IcuServer);
+                ENV.IsLocalhost = uri.IsLoopback;
+            }
             ENV.IsIcuEnabled = true;
+            
             DBG.Verbosity = config.Verbosity;
             DBG.SetSystem("WA");
             return services;

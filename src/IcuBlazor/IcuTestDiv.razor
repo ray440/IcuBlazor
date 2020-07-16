@@ -1,7 +1,5 @@
 ﻿@page "/IcuTestDiv"
 
-@using IcuBlazor
-
 @code {
     [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
     [Parameter] public IcuTestSuite Suite { get; set; }
@@ -26,12 +24,12 @@
 }
 
 @if (Suite == null) {
-    var e = new IcuException(
+    var e = new BaseUtils.IcuException(
         "IcuTestDiv.Suite is undefined",
         "1) Typically use <IcuTestDiv Suite=\"@this\" Width=\"300\" ...>");
     ICU.MsgBus.Notify(IcuEvent.NewError(e));
 } else if (Width <= 0) {
-    var e = new IcuException(
+    var e = new BaseUtils.IcuException(
         "IcuTestDiv.Width is not set",
         "1) Typically use <IcuTestDiv Suite=\"@this\" Width=\"300\" ...>");
     ICU.MsgBus.Notify(IcuEvent.NewError(e));

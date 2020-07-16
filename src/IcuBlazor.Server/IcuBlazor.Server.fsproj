@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Version>0.9.3</Version>
+    <Version>1.0.2</Version>
     <Authors>NXS-7 Software Inc.</Authors>
     <Company>NXS-7 Software Inc.</Company>
     <Description>Server component for IcuBlazor a simple unit test framework for Blazor components.</Description>

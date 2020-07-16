@@ -3,24 +3,31 @@
 open System
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Mvc
+open Microsoft.AspNetCore.Hosting
 open IcuBlazor
 
 [<ApiController>]
 [<Route("api/[controller]")>]
-type IcuTestController() =
+type IcuTestController(env:IWebHostEnvironment) =
     inherit Controller()
 
     let sess sid = IcuSessions.Find(sid)
 
     [<HttpGet("[action]")>]
     member __.Ping() = // @ https://localhost:44322/api/IcuTest/Ping
+        if (String.IsNullOrWhiteSpace(ENV.wwwroot)) then
+            WWWRoot.FromFile env "index.html"
+
         let t = DateTime.Now.ToString("hh:mm:ss ")
         let r = Guid.NewGuid().ToString()
         Task.FromResult(SF "Pong t = %s   r = %s" t r)
 
     [<HttpPost("[action]")>]
     member __.SetConfig([<FromBody>] config:IcuConfig) =
-        let ss = IcuSessions.Get config.Name config
+        WWWRoot.FromConfig env config
+
+        let rpc = ServerRpc.CreateSrvProxy(config)
+        let ss = IcuSessions.Register rpc
         Task.FromResult(ss.ID)
 
     [<HttpGet("[action]")>]
@@ -28,7 +35,7 @@ type IcuTestController() =
         IcuRpc.ReadTest (sess sid) tname
     
     [<HttpPost("[action]")>]
-    member __.SaveTest(sid, [<FromBody>] dres:DiffAssert) =
+    member __.SaveTest(sid, [<FromBody>] dres:Models.DiffAssert) =
         IcuRpc.SaveTest (sess sid) dres
     
     [<HttpGet("[action]")>]
@@ -40,6 +47,6 @@ type IcuTestController() =
         IcuRpc.InitImageCapture (sess sid) title
 
     [<HttpPost("[action]")>]
-    member __.CheckRect(sid, [<FromBody>] args:SnapshotArgs) =
+    member __.CheckRect(sid, [<FromBody>] args:Models.SnapshotArgs) =
         IcuRpc.CheckRect (sess sid) args
 

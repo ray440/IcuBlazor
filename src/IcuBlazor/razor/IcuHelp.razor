@@ -13,7 +13,7 @@
         }
     }
 
-    var eh = ex as IcuHelpException;
+    var eh = ex as BaseUtils.IcuHelpException;
     if (String.IsNullOrEmpty(Topic) && eh != null) {
         Topic = eh.Tag;
     }
@@ -52,8 +52,6 @@ case "install":
 using IcuBlazor;
     :
 builder.Services.AddIcuBlazor(new IcuConfig {
-    IcuServer = "https://localhost:44322/",
-    WWWroot = "C:\\..path..\\wwwroot\\",
     TestDir = "TestFoo",
 });
 </pre>
@@ -65,12 +63,12 @@ case "config":
     (string root, string td) = ("", "");
     if (eh != null) {
         var c = (IcuConfig) eh.Context;
-        root = c.WWWroot;
+        //root = c.WWWroot;
         td = c.TestDir;
     }
     <p> @ex.Message </p>
     <ol>
-        <li>WWWroot(="@root") must be a full path (e.g. c:\dir-path...\wwwroot\)</li>
+        @*<li>WWWroot(="@root") must be a full path (e.g. c:\dir-path...\wwwroot\)</li>*@
         <li>TestDir(="@td") must be below WWWroot</li>
     </ol>
     <p>See Also: @{

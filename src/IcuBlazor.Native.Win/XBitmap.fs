@@ -105,6 +105,27 @@ module private XBM =
 module XBitmap =
     open XBM
 
+    [<PermissionSet(SecurityAction.Assert, Name="FullTrust")>] // FxCop: LinkDemand on Save()
+    let Save(fileName, image:BitmapSource) =
+        let enc = new PngBitmapEncoder()
+        enc.Frames.Add(BitmapFrame.Create(image))
+        use s = File.OpenWrite(fileName)
+        enc.Save(s)
+
+    let Load(fileName) =
+        try 
+            let b = new BitmapImage()
+            b.BeginInit()
+            // Turn cache off otherwise file will be locked!
+            b.CacheOption <- BitmapCacheOption.OnLoad
+            b.CreateOptions <- BitmapCreateOptions.IgnoreImageCache
+            b.UriSource <- new Uri(fileName, UriKind.RelativeOrAbsolute)
+            b.EndInit()
+            b
+        with 
+            :? FileNotFoundException ->
+            null
+
     let FindPixels(image:BitmapSource, m:int32[]) =
         let mlen = m.Length
         let m0 = m.[0]
@@ -129,32 +150,11 @@ module XBitmap =
             r <- r + 1
         found
 
-    let ImageDiff(img0:BitmapSource, img1:BitmapSource) =
+    let ImageDiff (img0:BitmapSource) (img1:BitmapSource) (fname:string) =
         let (diff, pixels, maxw, maxh) = diff_by_pixel(img0, img1)
-        if (diff = 0) then
-            (null, diff)
-        else
-            let bigger_img = if (img0.PixelWidth > img1.PixelWidth) then img0 else img1
+        if not(diff = 0 || String.IsNullOrEmpty(fname)) then
+            let bigger_img = 
+                if (img0.PixelWidth > img1.PixelWidth) then img0 else img1
             let img = Create(bigger_img, maxw, maxh, pixels)
-            (img, diff)
-
-    [<PermissionSet(SecurityAction.Assert, Name="FullTrust")>] // FxCop: LinkDemand on Save()
-    let Save(fileName, image:BitmapSource) =
-        let enc = new PngBitmapEncoder()
-        enc.Frames.Add(BitmapFrame.Create(image))
-        use s = File.OpenWrite(fileName)
-        enc.Save(s)
-
-    let Load(fileName) =
-        try 
-            let b = new BitmapImage()
-            b.BeginInit()
-            // Turn cache off otherwise file will be locked!
-            b.CacheOption <- BitmapCacheOption.OnLoad
-            b.CreateOptions <- BitmapCreateOptions.IgnoreImageCache
-            b.UriSource <- new Uri(fileName, UriKind.RelativeOrAbsolute)
-            b.EndInit()
-            b
-        with 
-            :? FileNotFoundException ->
-            null
+            Save(fname, img)
+        diff

@@ -6,16 +6,15 @@ open System.Threading.Tasks
 
 module Proc =
 
-    let SubscribeTag ev action =
-        ev |> Observable.subscribe action //|> DisposeBin.Add tag
-
     type Subscribable<'a>() =
         let ev = new Event<'a>()
-        let pubs = ev.Publish :> IObservable<'a>
+        let obs = ev.Publish :> IObservable<'a>
         member __.Notify v = ev.Trigger v
-        member __.Do (f:'a->unit) = SubscribeTag pubs f
-        member __.DoAction (act:Action<'a>) = SubscribeTag pubs (fun x -> act.Invoke(x))
         member __.Await() = Async.AwaitEvent ev.Publish
+        member __.Do (f:'a->unit) = 
+            obs |> Observable.subscribe f
+        member __.DoAction (act:Action<'a>) = 
+            obs |> Observable.subscribe (fun x -> act.Invoke(x))
 
     type Observer<'a>(initValue:'a) =
         let mutable v = initValue
@@ -111,27 +110,34 @@ module Web =
     open System.Text
     open System.Net.Http
     
-    // zzz Hack to inject Blazor HttpClient
-    let mutable Http = Unchecked.defaultof<HttpClient>
-    let mutable clientFactory = Unchecked.defaultof<IHttpClientFactory>
-    let GetHttp() =
-        if ENV.IsWasm
-        then Http
-        else clientFactory.CreateClient("ICUapi")
+    type Api(httpFactory:IHttpClientFactory, apiRoot:string) =
 
-    let unwrap_request(request : Task<HttpResponseMessage>) = async {
-        let! resp = request |> Async.AwaitTask 
-        if not resp.IsSuccessStatusCode then // propogate server error to client
+        let _http_instance = new HttpClient()
+        let http() = 
+            _http_instance
+            //httpFactory.CreateClient("ICUapi") // occasional cache bug??
+
+        let uri cmd = apiRoot + cmd
+
+        let unwrap_request(request : Task<HttpResponseMessage>) = async {
+            let! resp = request |> Async.AwaitTask 
             let! body = resp.Content.ReadAsStringAsync() |> Async.AwaitTask
-            failwith(body)
-        return! resp.Content.ReadAsStringAsync() |> Async.AwaitTask
-    }
-    let PostJsonAsync (url:string, arg:obj) = async {
-        let js = Conv.ToJson(arg)
-        use c = new StringContent(js, Encoding.UTF8, "application/json")
-        return! GetHttp().PostAsync(url, c) |> unwrap_request
-    }
-    let GetStringAsync (url:string) = async {
-        return! GetHttp().GetAsync(url) |> unwrap_request
-    }
+            if not resp.IsSuccessStatusCode then // propogate server error to client
+                failwith(body)
+            return body
+        }
 
+        let PostJsonAsync (url:string) (arg:obj) = async {
+            let js = Conv.ToJson(arg)
+            use c = new StringContent(js, Encoding.UTF8, "application/json")
+            return! http().PostAsync(url, c) |> unwrap_request
+        }
+
+        let GetStringAsync (url:string) = async {
+            return! http().GetAsync(url) |> unwrap_request
+        }
+
+        member __.Gethttp() = http()
+        member __.GetAsync cmd = http().GetAsync (uri cmd)
+        member __.GetString cmd = GetStringAsync (uri cmd)
+        member __.PostJson cmd args = PostJsonAsync (uri cmd) args

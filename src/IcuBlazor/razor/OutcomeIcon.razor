@@ -27,6 +27,10 @@
             state = "plain";
             icon = "oi-contrast";
             break;
+        case OutcomeType.Tags.New:
+            state = "skip";
+            icon = "oi-sun";
+            break;
         }
         return (State: state, Icon: icon);
     }
@@ -36,20 +40,20 @@
     var si = OutcomeStat(Outcome);
 }
 <Styled>
-.x-icon {
+.icu .x-icon {
     width: 1.5em;
     text-align: center;
 }
-.fg-plain {
+.icu .fg-plain {
     color: [--plain];
 }
-.fg-pass {
+.icu .fg-pass {
     color: [--pass-dark];
 }
-.fg-fail {
+.icu .fg-fail {
     color: [--fail-dark];
 }
-.fg-skip {
+.icu .fg-skip {
     color: [--skip-dark];
 }
 </Styled>

@@ -9,6 +9,13 @@
     string wstyle = "";
     List<IcuTestSuite> Suites = new List<IcuTestSuite>();
     IcuToolbar bar;
+    ViewerLayout vlayout;
+
+    public void Update()
+    {
+        if (vlayout != null) vlayout.Update();
+        StateHasChanged();
+    }
 
     internal void SetTheme() {
         Styled.SetThemeValue("--font",
@@ -26,9 +33,6 @@
         Styled.SetThemeValue("--plain-light", "#ddd");
         Styled.SetThemeValue("--plain-dark",  "#222");
     }
-    protected override void OnInitialized() {
-        SetTheme();
-    }
 
     internal void AddTestMethods() {
         foreach (var sut in Suites) {
@@ -40,29 +44,51 @@
         ICU.MsgBus.Notify(IcuEvent.NewRunStart(this));
 
         var last = Suites.LastOrDefault();
-        var T  = 0L;
+        var T  = 500L;
         var t0 = DateTime.Now.Ticks;
+
         foreach (var sut in Suites) {
             DBG.Info("\n");
-            sut.Running = true;
-            var title = $"{sut.GetType().Name}";
-            await sut.ExecuteTests().Log(title);
-            sut.Running = (sut == last); // close all but last
-            await sut.Update();
+            var title = sut.GetType().Name;
+            await sut.ExecuteTests(sut == last).Log(title);
 
             var now = DateTime.Now.Ticks;
             T += (now - t0)/10000;
             t0 = now;
             if (T > 500) {
                 T = 0;
-                StateHasChanged();
+                Update();
                 //await Task.Delay(10);
             }
         }
 
         ICU.MsgBus.Notify(IcuEvent.NewRunEnd(this));
         await Task.Delay(200);
-        StateHasChanged();
+        ICU.RefreshModels();
+        Update();
+    }
+
+    //void KeyWasPressed(KeyboardEventArgs args) {
+    //    var k = args.Key.ToLower();
+    //    DBG.Log($"key = {k}");
+    //    switch (k) {
+    //    case "1":
+    //        var c = ICU.Config;
+    //        c.ViewLayout = c.ViewLayout switch {
+    //            ViewLayout.Tree => ViewLayout.TreeDetail, 
+    //            ViewLayout.TreeDetail => ViewLayout.Flat,
+    //            ViewLayout.Flat => ViewLayout.Tree,
+    //            _ => ViewLayout.Tree,
+    //        };
+    //        Update();
+    //        break;
+    //    default:
+    //        break;
+    //    }
+    //}
+
+    protected override void OnInitialized() {
+        SetTheme();
     }
 
     public void Run(List<IcuTestSuite> suites) {
@@ -74,7 +100,6 @@
 }
 @{
     wstyle = $"width:{Width}px";
-    DBG.Log("TestRunner.Render");
 }
 <Styled>
 .icu .fillw {
@@ -82,6 +107,9 @@
 }
 .icu .dbg {
     border: 1px dashed red;
+}
+.icu .muted-text {
+    color: rgba(0, 0, 0, 0.5);
 }
 .icu .flexrow {
     display: flex;
@@ -94,6 +122,7 @@
 .icu .icu-viewer {
     font-family: [--font];
     @*width: @XSS.pixels(@Width);*@
+    @*background:#eee;*@
 }
 .icu .fixed-font {
     font-family: [--font-fixed];
@@ -101,17 +130,19 @@
 
 </Styled>
 
+
 <div class="icu-viewer" style="@wstyle">
-    <IcuToolbar @ref="bar" OnUpdate="((x)=>StateHasChanged())"/>
+    <IcuToolbar @ref="bar" OnUpdate="((x)=>Update())"/>
     @if (bar != null) {
         @if (!String.IsNullOrWhiteSpace(bar.error)) {
             <ExceptionBox Msg="@bar.error" />
+            <br/>
         }
         @if (bar.showSettings) {
             <IcuSettings OnSubmit="bar.ToggleShowSettings"/>
-        } else {
             <br/>
-            <IcuSuite Suite="@ICU.Session.TreeRoot" />
+        } else {
+            <ViewerLayout @ref="vlayout"/>
         }
     }
 </div>

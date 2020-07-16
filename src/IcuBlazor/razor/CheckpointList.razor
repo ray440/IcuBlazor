@@ -1,0 +1,18 @@
+﻿@page "/CheckpointList"
+
+@code {
+    [Parameter] public List<Checkpoint> Checks { get; set; }
+
+    public void SetChecks(List<Checkpoint> cps) {
+        Checks = cps;
+        StateHasChanged();
+    }
+
+}
+<div>
+    @if (Checks != null) {
+        foreach (var c in Checks) {
+            <IcuCheckpoint Check=@c />
+        }
+    }
+</div>

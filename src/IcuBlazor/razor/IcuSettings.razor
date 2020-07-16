@@ -37,12 +37,17 @@
         <DataAnnotationsValidator />
     </EditFormEntry>
 
-    <EditFormEntry Label="WWW Root">
-        <div> @c.WWWroot</div>
-    </EditFormEntry>
     <EditFormEntry Label=" Test Dir">
         <div> @c.TestDir</div>
     </EditFormEntry>
+
+    <EditFormEntry Label="View Layout">
+        <InputSelect @bind-Value="c.ViewLayout">
+            <option value="Tree">Tree</option>
+            <option value="Flat">Flat</option>
+        </InputSelect>
+    </EditFormEntry>
+
     <EditFormEntry Label="Filter">
         <InputText @bind-Value="c.Filter" />
     </EditFormEntry>

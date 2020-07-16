@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+     width="1.5em" viewBox="0 0 680 360" style="max-width:100%;">
+  <g style="fill: #eee; stroke: none; opacity: 0.9;">
+    <rect x="20" y="20" width="640" height="320"
+          style="fill: none; stroke: #eee; stroke-width:40;"/>
+    <ellipse cx="280" cy="130" rx="40" ry="40" />
+    <ellipse cx="560" cy="130" rx="40" ry="40" />
+    <rect x="80"  y="80" width="240" height="40" />
+    <rect x="360" y="80" width="240" height="40" />
+  </g>
+</svg>

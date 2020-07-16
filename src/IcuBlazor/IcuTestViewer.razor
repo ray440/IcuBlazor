@@ -2,6 +2,7 @@
 
 @using System.Reflection
 @using IcuBlazor.razor
+@using static IcuBlazor.BaseUtils
 
 @inject IServiceProvider sp
 @inject NavigationManager nav
@@ -15,7 +16,7 @@
     => Must delay BlazorSyled setup in TestRunner
        - because AddIcuBlazor() was not called
 - Start Test Execution
-  - Load all<IcuTestSuite/> children
+  - Load all <IcuTestSuite/> children
   - Pass values to IcuTestRunner
 *@
 
@@ -84,21 +85,25 @@
         }
         await base.OnAfterRenderAsync(firstRender);
     }
-    string ebox = "background:#fee;padding:0.5em;border:.1em solid red;";
+    string ebox = @"
+font-size:80%;
+width:50em;padding:0 1em;
+background:#fee;border:.2em solid red;";
 }
 
 <div class="icu"> @* --- use ".icu" css namespace ------------ *@
     @if (icu_error != null) {
-        <div style="@ebox">
-            <pre><h5>@icu_error.Message</h5>@icu_error.Help</pre>
-            <pre style="font-size:80%">@icu_error.StackTrace</pre>
-        </div>        
+        <pre style="@ebox">
+<h5>@icu_error.Message</h5>@icu_error.Help
+
+@icu_error.StackTrace
+        </pre>            
         @*<IcuHelp ex="@icu_error" />*@
     } else if (!String.IsNullOrEmpty(status)) {
-        <div style="font-size:80%;@ebox">
-            <pre>@status</pre>
-        </div>
-    } else if (ICU != null) {
+        <pre style="font-size:80%;@ebox">@status</pre>
+    } else if (ICU == null) {
+        @* Preload <Styled> somehow...zzz  *@
+    } else {
         <CascadingValue Value="@this" Name="ICUViewer" IsFixed="true">
             <CascadingValue Value="@ICU" Name="ICU" IsFixed="true">
                 <IcuVerify />

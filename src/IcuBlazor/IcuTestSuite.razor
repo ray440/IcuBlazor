@@ -31,16 +31,19 @@
     public virtual void OnSuiteEnd() {
     }
 
-    public async Task ExecuteTests() {
+    public async Task ExecuteTests(bool keepAlive) {
         this.OnSuiteStart();
-        await Proc.AsTask(ss.RunTests(this));
+        Running = true;
+        await Proc.AsTask(ss.RunTests(this));        
         this.OnSuiteEnd();
+        Running = keepAlive;
+        await Update();
     }
 
     protected override void OnInitialized() {
         if (Parent == null) {
             var tag = this.GetType().Name;
-            throw new IcuException($"Misplaced <{tag}/>",
+            throw new BaseUtils.IcuException($"Misplaced <{tag}/>",
                 $"IcuTestSuite must be place within an IcuTestViewer.\n"+
                 $"  <IcuTestViewer>\n     <{tag}/>\n  <IcuTestViewer/>\n\n");
         }
@@ -82,14 +85,14 @@
         ss.AddDefaultTests(this);
     }
 
-    
+
     // --- Rendering & synchronization ----------
 
     TaskCompletionSource<bool> tcs;
     /// <summary>
     /// Call StateHasChanged()
     /// </summary>
-    public async Task Update() {
+    async Task Update() {
         if (ENV.IsWasm)
             StateHasChanged();
         else
@@ -97,7 +100,7 @@
     }
 
     /// <summary>
-    /// Trigger exection of IcuTestSuite & waits until rendering is done.  
+    /// Trigger execution of IcuTestSuite & wait until rendering is done.  
     /// Should be used sparingly.
     /// </summary>
     public async Task<bool> RenderNow() {
@@ -124,7 +127,7 @@
     /// Take a snapshot of a div & compare with previous snapshot.
     /// </summary>
     /// <param name="check"></param>
-    /// <param name="testName">Unique testName. Can have a path. (e.g. "init" or "docs/fig23")</param>
+    /// <param name="testName">Use to make file name, {testName}.png. Can have a path. (e.g. "init" or "docs/fig23")</param>
     /// <param name="selector">css selector of div (e.g. "#divID", ".class", "#example .section")</param>
     public async Task CompareDiv(Checker check, string testName, string selector = "#icu-test-div") {
         await RenderNow();

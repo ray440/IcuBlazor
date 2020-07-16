@@ -2,207 +2,7 @@
 
 open System
 open System.Collections.Generic
-open System.Runtime.InteropServices
 open Microsoft.FSharp.Core
-
-module ENV =
-
-    //let mutable IsWasm = RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"))
-    let mutable IsWasm = (Type.GetType("Mono.Runtime") |> box <> null)
-    let mutable IsIcuEnabled = false
-    let mutable Browser = ""
-    
-
-module Logger =
-
-    let mutable sys = "[] "
-
-    let Out(s:string) = 
-        //System.Diagnostics.Debug.WriteLine(s)
-        System.Console.WriteLine(s)
-
-    let private indent_strings =
-        let d = new Dictionary<_,_>()
-        fun k ->
-            match d.TryGetValue k with
-            | true, v -> v
-            | _  ->
-                d.[k] <- String.replicate k " "
-                d.[k]
-
-    let inline now() = DateTime.Now.Ticks
-    let default_log =
-        if ENV.IsWasm then
-            fun str -> Out(sys + str)
-            //let mutable t0 = now()
-            //fun str ->
-            //    let ts = sprintf "%6d" ((now()-t0)/10000L)
-            //    Out(ts + sys + str)
-            //    t0 <- now()
-        else 
-            fun str ->
-                let tid = Threading.Thread.CurrentThread.ManagedThreadId
-                Out(sprintf "%3d%s%s" tid sys str)
-
-    type Indenter(logger: string -> unit) =
-        let mutable in_num = 0;
-        let mutable in_str = ""
-    
-        let log str = logger(in_str + str)
-
-        let set_indent i = 
-            in_num <- max 0 i
-            in_str <- indent_strings in_num
-        let set_inc inc = set_indent (in_num + inc)
-
-        member __.Reset() =
-            set_indent 0
-
-        member __.Indent(inc, title) =
-            if (inc > 0) then log(title)
-            set_inc inc
-            if (inc < 0) then log(title)
-
-        member __.Log s = log (s)
-
-module DBG =
-    open Microsoft.Extensions.Logging
-
-    let mutable Verbosity = LogLevel.Information
-
-    let private _ind = new Logger.Indenter(Logger.default_log)
-
-    let SetSystem sys = 
-        Logger.sys <- sprintf "[%s] " sys
-        _ind.Indent(0, "")
-
-    let Indent(inc, title) = 
-        if Verbosity <= LogLevel.Information then _ind.Indent(inc, title)
-    let private levelLog level s = 
-        if Verbosity <= level then _ind.Log s
-
-    let Log s  = levelLog LogLevel.Trace s
-    let Info s = levelLog LogLevel.Information s 
-    let Err s  = levelLog LogLevel.Error s 
-
-    let IndentF title f = 
-        Indent(3, title + " {")
-        let x = f()
-        Indent(-3, "}")
-        x
-    let IndentFR title f = 
-        Indent(3, title + " { ")
-        let x = f()
-        Indent(-3, sprintf "} => %A " x)
-        x
-    let IndentA title f = async {  
-        Indent(3, title + " {")
-        let! x = f
-        Indent(-3, "}")
-        return x
-    }
-
-    //open System.Threading.Tasks
-
-    //let IndentAct title (f:Action) = // for c#
-    //    Indent(3, title + " {")
-    //    f.Invoke()
-    //    Indent(-3, "}")
-        
-    //let IndentTask title (f:Task) = 
-    //    async {
-    //        let iid = Logger.PrefixedID ".."
-    //        Indent(3, title + " { "+iid)
-    //        do! f |> Async.AwaitTask
-    //        Indent(-3, "} "+iid)
-    //    } |> Async.StartAsTask :> Task
-
-    //let IndentT title f = 
-    //    async {  
-    //        let iid = Logger.PrefixedID ".."
-    //        Indent(3, title + " { "+iid)
-    //        let! x = f |> Async.AwaitTask
-    //        Indent(-3, "} "+iid)
-    //        return x
-    //    } |> Async.StartAsTask
-
-
-module Seq =
-    let inline exclude f (s:seq<'a>) = s |> Seq.filter (f >> not)
-
-module Str =
-    let inline Split (c:string) (text:string) = 
-        text.Split([| c |], StringSplitOptions.None)
-
-    let SplitAndTrim sep s =
-        Split sep s
-        |> Seq.map (fun s -> s.Trim())
-        |> Seq.filter(fun l -> l.Length > 0)
-        |> Seq.toArray
-
-    let Join (sep:string) (strs:seq<string>) = String.Join(sep, strs)
-
-    let Contains (part:string) (s:string) = s.Contains(part)
-
-    // Converts (somewhat intelligently) a string to an array of words
-    // - handles camelCase, snake_case, slug-case. 
-    // - doesn't have to be perfect, just a suggestion
-    type CharType = Lower | Upper | Digit | Wild | WhiteSpace
-    let AsWords (text:string) = 
-        let char_type c =
-            if Char.IsLower c then Lower
-            elif Char.IsUpper c then Upper
-            elif Char.IsDigit c then Digit
-            //elif Char.IsWhiteSpace c then WhiteSpace
-            else Wild
-        let canBreak c0 c1 =
-            let a = char_type c0
-            let b = char_type c1
-            a <> b        // same char type. Group num & uppers together
-            && a <> Upper // not already capitalized
-            && a <> Wild  // wildcard match
-            && b <> Wild 
-
-        let s = // handle dot/slug/snake Case
-            text.Split([| " "; "."; "_"; "-" |], StringSplitOptions.None)
-            |> String.concat " "
-
-        let buf = ResizeArray()
-        s |> Seq.iteri(fun i c -> // for camelCase insert spaces on "breaks"
-            if i > 0 && (canBreak s.[i-1] s.[i]) then 
-                buf.Add(' ')
-            buf.Add(c)
-            )        
-        (new string(buf.ToArray())) |> SplitAndTrim " "
-
-    let Cap c = c.ToString().ToUpper()
-    let Capitalize s = 
-        if String.IsNullOrEmpty s then s else Cap(s.[0]) + s.Substring(1)    
-    let Entitle(s:string) = 
-        // heuristic: don't capitalize small words (e.g. a, of, in, ...)
-        if s.Length < 3 then s else Capitalize s
- 
-    let TitleCase s = 
-        let t = AsWords s |> Seq.map Entitle |> String.concat " "
-        Capitalize t  // first word may NOT be capitalized (e.g. "an_egg")
-
-    //let private invalid_chars = Path.GetInvalidFileNameChars()
-    let private invalid_chars = [|
-      '"'; '<'; '>'; '|'; '/'; ':'; '*'; '?'; '\b';
-      |]
-    let isValidChar(c:char) = 
-        (c > '\031') && not(Array.contains c invalid_chars)
-    let IsValidTestName name =
-        (not(String.IsNullOrWhiteSpace name))
-        && (name |> Seq.forall isValidChar) // IndexOfAny(invalid_chars) < 0)
-
-module Conv =
-    open Newtonsoft.Json
-
-    let ToJson(v) = JsonConvert.SerializeObject(v)
-    let FromJson<'T>(js:string) = JsonConvert.DeserializeObject<'T>(js)
-
-
 
 [<AutoOpen>]
 module BaseUtils =
@@ -251,6 +51,7 @@ module BaseUtils =
         member __.Find k =   
             L (fun () -> if _d.ContainsKey k then Some(_d.[k]) else None)
 
+
     type LRUCache<'K,'V when 'K:equality>(limit:int) =
         inherit CDict<'K,'V>()
 
@@ -291,13 +92,26 @@ module BaseUtils =
     /// Memoize the given function.
     let memoize f = memoizeWith (CDict<_,_>()) id f
 
-    type DVal(calc) =
-        let mutable d = true
-        member __.IsDirty() = d <- true
-        member __.Refresh() =
-            if d then
-                calc()
-                d <- false
+    // allows you to store multiple items for one key
+    type MultiDict<'K, 'V when 'K:equality>() = 
+        // NOTE: different layers of locking are required
+        // - CDict is locked on internal Dict _d._d = Dictionary<>
+        // - for consistency make sure we lock on _d._d
+        let _d = CDict<'K, CList<'V>>()
+        let _dl = _d.Dict() // lock on CDict internal storage Dictionary<>
+        let sub_list = memoizeWith _d id (fun _k -> CList<'V>())
+        let get_list k = lock _dl (fun() -> sub_list k)
+
+        member val Dict = _d.Dict
+        member __.Item k = _d.[k]
+        member __.GetList k = get_list k
+        member __.RemoveList k = _d.Remove(k)
+        member __.ContainsList k = _d.ContainsKey k
+        member __.Add k v = (get_list k).Add(v)
+        member __.RemoveItem k v = (get_list k).Remove(v)
+        member __.Clear() = _d.Clear()
+        member __.Count() = _d.Count
+
 
     type Counter(tag) =
         let mutable c = 11000
@@ -305,6 +119,65 @@ module BaseUtils =
 
     let instCounter = new Counter("inst")
     let PrefixedID pre = pre + (instCounter.Next().ToString())
+
+//[<AutoOpen>]
+//module Obs =
+
+    type Subscribable<'a>() =
+        let ev = new Event<'a>()
+        let obs = ev.Publish :> IObservable<'a>
+        member __.Notify v = ev.Trigger v
+        member __.Await() = Async.AwaitEvent ev.Publish
+        member __.Do (f:'a->unit) = 
+            obs |> Observable.subscribe f
+        member __.DoAction (act:Action<'a>) = 
+            obs |> Observable.subscribe (fun x -> act.Invoke(x))
+
+    type Observer<'a>(initValue:'a) =
+        let mutable v = initValue
+        let subs = new Subscribable<'a>() // does not hold a value
+
+        member val Subscribable = subs
+        member __.Subscribe action = subs.Do action
+        member __.Value
+            with get() = v
+            and  set x =
+                if not(Unchecked.equals v x) then
+                    v <- x
+                    subs.Notify v 
+
+//[<AutoOpen>]
+//module Exception = 
+
+    type IcuException(title:string, help:string) =
+        inherit Exception(title)
+
+        member val Help = help
+
+        override e.ToString() =
+            SF "IcuException: %s\n%s\n%s" title help e.StackTrace
+
+    type IcuHelpException(tag:string, title:string, context:obj) =
+        inherit Exception(title)
+
+        member val Tag = tag
+        member val Context = context
+        //override e.ToString() =
+        //    SF "IcuException: %s\n   (see %s)\n%s\n" title e.Link e.StackTrace
+
+module Conv =
+    open Newtonsoft.Json
+
+    let ToJson(v) = JsonConvert.SerializeObject(v)
+    let FromJson<'T>(js:string) = JsonConvert.DeserializeObject<'T>(js)
+
+module DiffService =
+    open DiffPlex
+    
+    let diffBuilder = Differ() |> DiffBuilder.SideBySideDiffBuilder
+
+    let GetDiffs(oldText, newText) =
+        diffBuilder.BuildDiffModel(oldText, newText, false)
 
 
 module SlashPath = 
@@ -318,19 +191,42 @@ module SlashPath =
         then root + node
         else SF "%s/%s" root node
 
+module Tree =
 
-type IcuException(title:string, help:string) =
-    inherit Exception(title)
+    type Base(parent:Option<Base>, name) =
+        let path = 
+            let root = if parent.IsSome then parent.Value.Path else ""
+            SlashPath.Make root name
+        let onChange = new Subscribable<obj>()
+    
+        member val Path = path
+        member val Name = name
+        member val OnChange = onChange
+        member val Open = false with get, set
+        member g.ToggleOpen() = g.Open <- not g.Open
 
-    member val Help = help
 
-    override e.ToString() =
-        SF "IcuException: %s\n%s\n%s" title help e.StackTrace
+    type Node<'Kid>(parent, name) =
+        inherit Base(parent, name)
 
-type IcuHelpException(tag:string, title:string, context:obj) =
-    inherit Exception(title)
+        let kids = new CList<'Kid>();
+        let lookup = new CDict<string, 'Kid>();
 
-    member val Tag = tag
-    member val Context = context
-    //override e.ToString() =
-    //    SF "IcuException: %s\n   (see %s)\n%s\n" title e.Link e.StackTrace
+        member val Parent = parent
+        member val Kids = kids
+        member val Lookup = lookup
+
+        member __.Add key c =
+            kids.Add(c)
+            lookup.Set(key, c)
+    
+        member __.Clear() =
+            kids.Clear()
+            lookup.Clear()
+
+    let rec DepthFirstWalk(root:Node<_>) = seq {
+        for s in root.Kids.List() do
+            yield! (DepthFirstWalk s)
+        yield box root
+    }
+

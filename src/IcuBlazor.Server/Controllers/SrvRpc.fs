@@ -3,26 +3,48 @@
 open System
 open System.IO
 open IcuBlazor
+open IcuBlazor.Models
+
+module WWWRoot =
+    open System.Linq
+    open Microsoft.Extensions.FileProviders
+    open Microsoft.AspNetCore.Hosting
+
+    // The default wwwroot is different if run as CSB or SSB.
+    // And we need a consistent wwwroot for saving test data.
+
+    let extract_root (fi:IFileInfo) (file:string) = 
+        if (fi.Exists) then
+            let path = fi.PhysicalPath
+            let wwwroot,_ = path |> Str.SplitAt (path.LastIndexOf(file))
+            ENV.wwwroot <- wwwroot
+            DBG.Info(SF "IcuBlazor wwwroot: %A" wwwroot)
+
+    let FromFile (env:IWebHostEnvironment) file =
+        let fi = env.WebRootFileProvider.GetFileInfo file
+        extract_root fi file
+
+    let FromDir (env:IWebHostEnvironment) (testdir) =
+        let contents = env.WebRootFileProvider.GetDirectoryContents(testdir)
+        if not contents.Exists then
+            failwithf "Cannot find TestDir='wwwroot/%s'.  It must be created manually." testdir
+        extract_root (contents.First()) testdir
+
+    let FromConfig (env:IWebHostEnvironment) (config:IcuConfig) =
+        if (String.IsNullOrWhiteSpace(ENV.wwwroot)) then
+            FromFile env "index.html"
+            if (String.IsNullOrWhiteSpace(ENV.wwwroot)) then
+                FromDir env config.TestDir
+
 
 module ServerRpc =
 
     type Handler(config:IcuConfig) =
         let dir = 
-            let www, dir = config.WWWroot, config.TestDir
-            if not(Directory.Exists(www)) then 
-                raise (IcuException(SF "Invalid WWWroot %A." www, ""))
-
-            let d = Path.Combine(www, dir)
+            let d = Path.Combine(ENV.wwwroot, config.TestDir)
             DBG.Info(SF "Test data dir = %A" d)
-
-            if IcuConfig.DefaultTestDir.Equals(dir) then
-                Directory.CreateDirectory(d) |> ignore
-
             if not(Directory.Exists(d)) then
-                let help =
-                    (SF "1) WWWroot(=%A) must be a full path (e.g. c:\\dir-path...\\wwwroot\\)\n" www) +
-                    (SF "2) TestDir(=%A) must be below WWWroot \n" dir)
-                raise (IcuException(SF "Can't find Test Directory %A." d, help))
+                Directory.CreateDirectory(d) |> ignore
             d
 
         let rec handleFileException(e:exn) =
@@ -62,10 +84,12 @@ module ServerRpc =
             then saveImageTest diff
             else saveLogTest diff
 
-        let check_rect sid (args:SnapshotArgs) =            
+        let check_rect sid (args:SnapshotArgs) = async {         
             IcuIO.EnsureDirExists dir args.Name
-            WinCapture.SnapAndCompare sid dir args
-
+            let savediff = config.CanSaveTestData // if from CLI or readonly mode
+            let capture = args.Local && savediff  // if on local machine && savediff
+            return! WinCapture.SnapAndCompare sid dir args capture savediff
+        }
         let runServerTests() = // so we don't have to use Xunit, Nunit, etc...
             async {
                 //AppDomain.CurrentDomain.GetAssemblies()
@@ -79,7 +103,7 @@ module ServerRpc =
                 return "later" //"OK"
             } //|> DBG.IndentA "Server.runServerTests"
 
-        interface IRPCproxy with
+        interface RPC.IProxy with
             member val Config = config
             member __.ReadTest tname = readTest tname
             member __.SaveTest diff = saveTest diff
@@ -88,9 +112,7 @@ module ServerRpc =
             member __.RunServerTests() = runServerTests()
 
     let CreateSrvProxy(config:IcuConfig) =
-        if config.EnableServerTests 
-        then Handler(config) :> IRPCproxy
-        else RPC.Client.NullProxy(config) :> IRPCproxy
+        if config.EnableServer 
+        then Handler(config) :> RPC.IProxy
+        else RPC.NullProxy(config) :> RPC.IProxy
 
-    let Init() =
-        RPC.NewProxy <- CreateSrvProxy

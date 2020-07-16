@@ -1,0 +1,57 @@
+﻿@page "/ViewerLayout"
+
+@using static IcuBlazor.BaseUtils
+
+@code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+
+    CheckpointList detailChecks;
+
+    static OutcomeType[] order = { 
+        OutcomeType.Fail, 
+        OutcomeType.New, OutcomeType.Skip, 
+        OutcomeType.Pass, OutcomeType.Unknown};
+
+    void HandleEvent(IcuEvent e)
+    {
+        switch (e) {
+        case IcuEvent.Selected etm: // user clicked TestMethod
+            if (ICU.Config.ViewLayout == ViewLayout.TreeDetail) {
+                detailChecks.SetChecks(etm.Item.Kids.List());
+            }
+            break;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        ICU.MsgBus.DoAction(HandleEvent);
+    }
+
+    public void Update()
+    {
+        StateHasChanged();
+    }
+
+}
+
+
+@switch(ICU.Config.ViewLayout) {
+case ViewLayout.TreeDetail:
+    <GridLayout Cols="auto 1fr" style="padding:0em">
+        <div>
+            <IcuSuite Suite=@ICU.Session.TreeRoot />
+        </div>
+        <CheckpointList @ref="detailChecks"/>
+    </GridLayout>
+    break;
+case ViewLayout.Flat:
+    @foreach (var oc in order) {
+        <CheckpointList  Checks=@ICU.CheckGroup.GetGroup(oc) />
+    }
+    break;
+case ViewLayout.Tree:
+default:
+    <IcuSuite Suite="@ICU.Session.TreeRoot" />
+    break;
+}

@@ -7,13 +7,19 @@
     [Parameter] public Checkpoint Check { get; set; }
     Popup help;
 
-    string status = "Snapshots are not equal.";
     string currUrl = "", newUrl = "", diffUrl = "";
     string shownUrl = "";
     string pixelate = "";
     string browser_pix = "";
     string pzid = BaseUtils.PrefixedID("pzid-");
-    int ekey = -1;
+
+    string status = "Snapshots are not equal.";
+    async Task ShowStatus(string msg, int wait)
+    {
+        status = msg;
+        StateHasChanged();
+        await Task.Delay(500);
+    }
 
     void ShowImage(string url) {
         if (shownUrl != url)
@@ -23,21 +29,30 @@
     void HoverCurr() => ShowImage(currUrl);
     void HoverDiff() => ShowImage(diffUrl);
 
-    async Task Click(bool save) {
+    async Task VerifyTest(bool save) {
         var diff = Check.DiffAssert;
         try {
             if (save) {
-                status = "Saving...";
+                await ShowStatus("Saving...", 10);
                 await IcuRpc.SaveTest(ICU.Session, diff);
                 status = "";
             }
             Check.SetSaveSkip(save);
             Check.Verify().Value = false; // continue processing other tests
         } catch (Exception e) {
-            status = $"Error: Couldn't save Test '{diff.Name}' \n   {e.Message}";
+            status = $"Error: Couldn't save test '{diff.Name}' \n   {e.Message}";
         }
         StateHasChanged();
         ICU.MsgBus.Notify(IcuEvent.NewRefreshView(""));
+    }
+    async Task Click(bool save)
+    {
+        if (ICU.Config.CanSaveTestData) {
+            await VerifyTest(save);
+        } else {
+            await ShowStatus("Saving...", 500);
+            await ShowStatus("Canceled: Saving test data has been disabled.", 10);
+        }
     }
     void SkipTest()  => _ = Click(false);
     void SaveTest()  => _ = Click(true);
@@ -48,9 +63,6 @@
         case "1": HoverNew(); break;
         case "2": HoverCurr(); break;
         case "3": HoverDiff(); break;
-        case "0": case "r":
-            _ = UI.JS.PanZoomReset(ekey);
-            break;
         case "p":
             // should do this automatically if scale > 2
             pixelate = (pixelate.Length==0) ? "pixelate" : "";
@@ -62,12 +74,15 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
-            ekey = await UI.JS.PanZoomInit("#"+pzid);
+            await UI.JS.PanZoomInit("#"+pzid);
             browser_pix = (ENV.Browser.Equals("Chrome"))
                           ? "pixelated" : "crisp-edges";
         }
         await base.OnAfterRenderAsync(firstRender);
     }
+
+    string timestamp = "?"+(DateTime.Now.Ticks);
+    string UnCached (string url) => (url + timestamp);
 
 }
 @{
@@ -76,14 +91,15 @@
     var dir = ICU.Config.TestDir;
     var tname = Check.DiffAssert.Name;
     var ncols = 6;
-    newUrl  = IcuIO.NewImageFile(dir, tname);
+
+    newUrl  = UnCached(IcuIO.NewImageFile(dir, tname));
     if (pass) {
         status = "Snapshots are equal.";
         shownUrl = newUrl;
         ncols = 1;
     } else if (String.IsNullOrEmpty(shownUrl)) {
-        currUrl = IcuIO.CurrImageFile(dir, tname);
-        diffUrl = IcuIO.DiffImageFile(dir, tname);
+        currUrl = UnCached(IcuIO.CurrImageFile(dir, tname));
+        diffUrl = UnCached(IcuIO.DiffImageFile(dir, tname));
         shownUrl = newUrl;
     }
     var cols = $"1fr repeat({ncols}, auto)";
@@ -185,7 +201,7 @@
 
     @* --- test results --------------------------------------- *@
     <div class="image-holder">
-        <img id="@pzid" class="icu-image @pixelate" src="@shownUrl" />
+        <img class="icu-image @pixelate" src="@shownUrl" id="@pzid" />
         <img class="icu-image img-sizer" src="@currUrl" />
         <img class="icu-image img-sizer" src="@newUrl"/>
     </div>

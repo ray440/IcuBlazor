@@ -4,11 +4,11 @@
 
 @code {
 
-    [Parameter] public BaseTree Tree { get; set; }
+    [Parameter] public Tree.Base Tree { get; set; }
     [Parameter] public RenderFragment Header { get; set; }
     [Parameter] public RenderFragment HeaderTitle { get; set; }
     [Parameter] public RenderFragment Detail { get; set; }
-    [Parameter] public bool StayOpen { get; set; } = false;
+    [Parameter] public bool StayOpen { get; set; } = false; // for verifying
     [Parameter] public bool ShowHeader { get; set; } = true;
     [Parameter] public bool HasDetail { get; set; } = true;
     [Parameter] public bool Indented { get; set; } = true;
@@ -24,9 +24,10 @@
     }
 
     protected override async Task OnInitializedAsync() {
+        Tree.Open = false;
         makeOpenKey();
         await ReadOpenKey();
-        Tree.OnChange.DoAction((msg) => {
+        Tree.OnChange.DoAction(msg => {
             base.InvokeAsync(StateHasChanged);
         });
     }
@@ -35,9 +36,9 @@
 
 @{
     var open = StayOpen || Tree.Open;
+    var noIcon = StayOpen || !HasDetail;
     var iconOpen =
-            (StayOpen || !HasDetail) ? ""
-            : (open ? "oi-chevron-bottom" : "oi-chevron-right");
+        noIcon ? "" : (open ? "oi-chevron-bottom" : "oi-chevron-right");
     var indent = (Indented && ShowHeader) ? "indent" : "";
     var showDetail = HasDetail && open;
 }
