@@ -18,16 +18,14 @@ namespace CSB
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
 
-            builder.Services.AddTransient(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-
+            var baseAddr = builder.HostEnvironment.BaseAddress;
+            builder.Services.AddTransient(sp => new HttpClient { BaseAddress = new Uri(baseAddr) });
             builder.Services.AddIcuBlazor(new IcuConfig {
-                IcuServer = "https://localhost:44322/",
-                WWWroot = "C:\\change-to-actual-path\\CSB\\wwwroot\\",
+                IcuServer = baseAddr,
                 //TestDir = @"TestFiles",
                 //EnableServerTests = false,
                 //Verbosity = LogLevel.Error,
             });
-
 
             await builder.Build().RunAsync();
         }

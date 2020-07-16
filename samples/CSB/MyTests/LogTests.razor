@@ -1,0 +1,54 @@
+﻿@page "/MyTests/LogTests"
+@inherits IcuBlazor.IcuTestSuite
+
+@using System.Text
+
+@code {
+
+    // The following two tests verify the same System Under Test (SUT), WeatherCounter.Weather.
+    // The first uses traditional unit testing & the other uses IcuBlazor.
+    //
+    // Take a moment to consider what code needs to be changed if we want 
+    // to check the Summary field.
+    //
+    // IcuBlazor Verification tests (Check.Log() & CheckDiv())
+    //  1) Eases test writing burden
+    //     - Do not need to know "correct" values when writing tests.
+    //  2) Reduces SUT/Test code coupling => low maintenance
+    //     - Often, do not need to change tests when SUT changes.
+
+    void Test_with_traditional_unit_tests(Checker check)
+    {
+        var w = new Pages.WeatherCounter.Weather();  // System Under Test (SUT)
+        check.Equal(0, w.TempC, "Init TempC");
+        check.Equal(32, w.TempF, "Init TempF");
+        //check.Equal("Cold", w.Summary, "Init Summary");
+
+        w.TempC = -10;
+        check.Equal(15, w.TempF, "TempF when TempC = -10");
+        //check.Equal("Cold", w.Summary, "Summary when TempC = -10");
+
+        w.TempC = 100;
+        check.Equal(15, w.TempF, "TempF when TempC = 100");
+        //check.Equal("Hot", w.Summary, "Summary when TempC = 100");
+    }
+
+    void Test_with_text_diff(Checker check)
+    {
+        var w = new Pages.WeatherCounter.Weather();  // System Under Test (SUT)
+        var sb = new StringBuilder();
+        sb.AppendLine($"-- Weather init --\n");
+        sb.AppendLine(Conv.ToJson(w));
+
+        w.TempC = -10;
+        sb.AppendLine($"\n-- Weather @ {w.TempC}C --");
+        sb.AppendLine(Conv.ToJson(w));
+
+        w.TempC = 100;
+        sb.AppendLine($"\n-- Weather @ {w.TempC}C --");
+        sb.AppendLine(Conv.ToJson(w));
+
+        check.Log("weather", sb.ToString(), "changing weather");
+    }
+
+}

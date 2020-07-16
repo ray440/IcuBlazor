@@ -1,21 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="IcuBlazor.Server" Version="1.0.2" />
+    <!--<ProjectReference Include="..\..\src\IcuBlazor.Server\IcuBlazor.Server.fsproj" />-->
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CSB\CSB.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Watch Include="..\..\**\*.razor" />
-    <Watch Include="..\..\**\*.cs" />
+    <Watch Include="..\..\**\*.razor" Exclude="..\..\**\*.g.cs" />
+    <Watch Include="..\..\**\*.cs" Exclude="..\..\**\obj\**\*.cs" />
     <Watch Include="..\..\**\*.fs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="IcuBlazor.Server" Version="0.9.3" />
   </ItemGroup>
 
 </Project>

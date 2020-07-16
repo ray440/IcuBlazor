@@ -13,6 +13,13 @@ namespace Server.SSBLinked
 {
     public class Program
     {
+        public static Type ClientApp = 
+#if IcuLib
+            typeof(Tests.IcuLib.App);
+#else
+            typeof(CSB.App);
+#endif
+
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();

@@ -1,4 +1,4 @@
-﻿@page "/MyTests/TestRawHtml"
+﻿@page "/MyTests/RawHtmlTests"
 @inherits IcuBlazor.IcuTestSuite
 
 @using CSB.Pages
@@ -6,8 +6,9 @@
 @* 
     IcuBlazor can test raw HTML/Javascript/CSS code.
     - The SUT(System Under Test) is just html/js/css--no razor.
-    - The entire form is defined in this file.    
-    - Form includes a variety of input controls.
+    - The entire form is defined in this file for brevity
+      - This is highly irregular and not recommemded
+    - Form includes a variety of input controls to play with.
 *@
 
 <IcuTestDiv Suite="@this" Width="450" style="background:#ffd">
@@ -23,6 +24,7 @@
         font-weight: bold;
     }
     </style>
+
     <form class="aform">
         <label for="uname">Full Name</label>
         <input type="text" id="uname" name="username">
@@ -85,10 +87,10 @@
         await CompareDiv(cx, "init");
 
         var inputName = await UI.Find("#uname");
-        await UI.SetValue(inputName, "Samwise Gamgee");
         var inputEmail = await UI.Find("#uemail");
-        await UI.SetValue(inputEmail, "sgamgee@me.com");
         var inputAge = await UI.Find("#age");
+        await UI.SetValue(inputName, "Samwise Gamgee");
+        await UI.SetValue(inputEmail, "sgamgee@me.com");
         await UI.SetValue(inputAge, "52");
         await CompareDiv(cx, "form_filled");
     }

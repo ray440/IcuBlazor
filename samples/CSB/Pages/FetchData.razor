@@ -1,5 +1,6 @@
 @page "/fetchdata"
-@inject HttpClient Http
+
+@inject IServiceProvider sp
 
 <h1>Weather forecast</h1>
 
@@ -7,7 +8,11 @@
 
 @if (forecasts == null)
 {
-    <p><em>Loading...</em></p>
+    if (ENV.IsWasm) {
+        <p><em>Loading...</em></p>
+    } else {
+        <p>TODO: write IWeatherService for Server Side Blazor</p>
+    }
 }
 else
 {
@@ -39,7 +44,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        if (ENV.IsWasm) {
+            var Http = sp.GetService(typeof(HttpClient)) as HttpClient;
+            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        } else {
+            // TODO: write IWeatherService for Server side Blazor
+        }
     }
 
     public class WeatherForecast
