@@ -142,8 +142,7 @@
 <GridLayout Cols="1fr repeat(3, auto)" class="main-toolbar">
     <div>
         <a href="http://icublazor.com/" target="_blank">
-            <img loading="lazy" alt="IcuBlazor"
-                 src="http://icublazor.com/docs/images/logo-dark.svg?help_093">
+            <img loading="lazy" alt="IcuBlazor" src=@ICU.GetLogo()>
         </a>
         @status
         @* -- calling StateHasChanged() above confuses BlazorStyled (sometimes).

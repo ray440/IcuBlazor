@@ -5,9 +5,8 @@ open System
 type WinClipper(hwnd:IntPtr) =
     
     let is_valid() =
-        //let s = Win.getScalingFactor(hwnd)
         let hr = Win.WindowRect(hwnd)
-        (hr.Width > 0.0 && hr.Height > 0.0) //&& (s = 1.0) 
+        (hr.Width > 0.0 && hr.Height > 0.0)
 
     let find_rendering_area_offset() =
         let bm = Win.CaptureWindow(hwnd, 0.0, 0.0, 100.0, 300.0)

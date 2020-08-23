@@ -35,6 +35,13 @@ type IcuConfig() =
     member val RunRandomly = true with get, set
     member val OutFile = "" with get, set
 
+    //member this.Clone() = this.MemberwiseClone() :?> IcuConfig
+
+    //static member NewSession(c:IcuConfig) = 
+    //    let nc = c.Clone()
+    //    nc.SessionID <- Guid.NewGuid().ToString()
+    //    nc
+
 module Models = 
 
     type TestType = Assert | TextDiff | LogDiff | ImageDiff

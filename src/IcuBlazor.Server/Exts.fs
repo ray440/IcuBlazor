@@ -1,10 +1,8 @@
 namespace IcuBlazor
 
-open System
 open System.Runtime.CompilerServices
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
-open IcuBlazor.Controllers
 open Microsoft.AspNetCore.Hosting
 
 [<Extension>]

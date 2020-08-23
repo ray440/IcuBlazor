@@ -10,10 +10,10 @@
     IDictionary<string, object> attrs { get; set; }
 
     void AugmentStyle() {
-        var n = "style";
         attrs = BaseUtils.CopyDict<string, object>(AdditionalAttributes);
+        var n = "style";
         var v = attrs.ContainsKey(n) ? attrs[n] : "";
-        attrs[n] = $"{v};width:{Width}px";
+        attrs[n] = $"{v};width:{Width}px;";
     }
 
     protected override void OnInitialized() {

@@ -15,12 +15,14 @@ open Microsoft.AspNetCore.ResponseCompression
 open Microsoft.AspNetCore.Cors.Infrastructure
 open IcuBlazor
 
-type Startup private () =
-    new (configuration: IConfiguration) as this =
-        Startup() then
-        this.Configuration <- configuration
+// Note: This is only used for starting IcuBlazor.Server manually, which is rare.
 
-    member val Configuration : IConfiguration = null with get, set
+type Startup (configuration: IConfiguration) =
+    //new (configuration: IConfiguration) as this =
+    //    Startup() then
+    //    this.Configuration <- configuration
+
+    //member val Configuration : IConfiguration = null with get, set
 
 
     member __.ConfigureServices(services: IServiceCollection) =

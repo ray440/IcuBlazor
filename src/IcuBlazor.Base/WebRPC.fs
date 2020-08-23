@@ -15,6 +15,7 @@ open IcuBlazor.Models
 module RPC = 
     open System.Net
     open System.Net.Http
+    open System.Net.NetworkInformation
 
     type private Connection(config:IcuConfig, webapi:Web.Api) = 
 
@@ -30,9 +31,16 @@ module RPC =
            else
             "1) Check server calls app.UseIcuServer() & services.AddIcuBlazor().\n"
 
+        //let raw_ping(host:string) =
+        //    let ping = new Ping() // doesn't work in CSB
+        //    let r = ping.Send(host)
+        //    if (r.Status <> IPStatus.Success) then
+        //        failwithf "Ping failed %A" r.Status
+
         let is_online() = async {
             try 
                 isOnline <- false
+                //raw_ping(APIhost)
                 let! resp = webapi.GetAsync "Ping" |> Async.AwaitTask
                 let! body = resp.Content.ReadAsStringAsync() |> Async.AwaitTask
                 if not(body.StartsWith("Pong")) then
@@ -52,8 +60,8 @@ module RPC =
 
         let init_session_async() = 
             async {
-                DBG.Info(SF "IcuBlazor server: %A" config.IcuServer)
                 DBG.Info(SF "IcuBlazor test dir: %A" config.TestDir)
+                DBG.Info(SF "Connecting to %A ..." config.IcuServer)
                 do! is_online()
                 let! resp = webapi.PostJson "SetConfig" config
                 if isOnline 

@@ -30,8 +30,10 @@ namespace IcuBlazor
     }
 
 
+    // Used to initialize Blazor UI code.
     public static partial class IcuBlazorAppBuilderExtensions
     {
+
         public static IServiceCollection AddIcuBlazor
             (this IServiceCollection services, IcuConfig config)
         {
