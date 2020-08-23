@@ -37,39 +37,38 @@ module internal NativeMethods =
     extern int ShowWindow(IntPtr hWnd, int cmd)
 
     [<DllImport("gdi32.dll", CallingConvention = CallingConvention.Cdecl)>]
-    extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+    extern int GetDeviceCaps(IntPtr hdc, int nIndex)
 
     [<DllImport("user32.dll", CallingConvention = CallingConvention.Cdecl, CharSet=CharSet.Ansi, SetLastError=true, ExactSpelling=true)>]
-    extern bool SetForegroundWindow(IntPtr hwnd);
+    extern bool SetForegroundWindow(IntPtr hwnd)
 
     [<DllImport("user32.dll", CallingConvention = CallingConvention.Cdecl, CharSet=CharSet.Ansi, SetLastError=true, ExactSpelling=true)>]
-    extern bool IsIconic(IntPtr hWnd);
+    extern bool IsIconic(IntPtr hWnd)
 
     [<DllImport("user32.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)>]
-    extern int GetWindowText(IntPtr hWnd, StringBuilder strText, int maxCount);
+    extern int GetWindowText(IntPtr hWnd, StringBuilder strText, int maxCount)
 
     [<DllImport("user32.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)>]
-    extern int GetWindowTextLength(IntPtr hWnd);
+    extern int GetWindowTextLength(IntPtr hWnd)
 
     [<DllImport("user32.dll", CallingConvention = CallingConvention.Cdecl)>]
-    extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+    extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam)
 
     [<DllImport("user32.dll", CallingConvention = CallingConvention.Cdecl)>]
-    extern bool GetWindowRect(IntPtr hwnd, RECT& rectangle);
+    extern bool GetWindowRect(IntPtr hwnd, RECT& rectangle)
 
-    
 
 module internal Win =
     open NativeMethods
 
     let EmptyPoint = new Point(0.0, 0.0)
 
-    let getScalingFactor hwnd =
-        let g = Graphics.FromHwnd(hwnd)
-        let d = g.GetHdc()
-        let LogicalHeight = GetDeviceCaps(d, (int)DeviceCap.VERTRES)
-        let PhysicalHeight = GetDeviceCaps(d, (int)DeviceCap.DESKTOPVERTRES)
-        (float)PhysicalHeight / (float)LogicalHeight
+    let WindowRect(hwnd) =
+        let mutable r = new RECT()
+        GetWindowRect(hwnd, &r) |> ignore
+        if (r.Width=0 || r.Height=0) then
+            failwith "Invalid window"
+        new Rect(float r.Left, float r.Top, float r.Width, float r.Height)
     
     let BringToFront hwnd =
         if (IsIconic(hwnd)) then
@@ -81,7 +80,7 @@ module internal Win =
         let windows = new List<IntPtr>()
         let callback = new EnumWindowsProc(fun wnd param ->
             if (filter(wnd, param)) then
-                windows.Add(wnd)            
+                windows.Add(wnd)
             true)
         EnumWindows(callback, IntPtr.Zero) |> ignore
         windows
@@ -101,11 +100,6 @@ module internal Win =
             t.Contains(titleText)
         )
 
-    let WindowRect(hwnd) =
-        let mutable r = new RECT()
-        GetWindowRect(hwnd, &r) |> ignore
-        new Rect(float r.Left, float r.Top, float r.Width, float r.Height)
-    
     let CaptureScreenRect(r:Rect) =
         let (x, y, w, h) = (int r.X, int r.Y, int r.Width, int r.Height)
         use image = new Bitmap(w,h)
@@ -117,8 +111,8 @@ module internal Win =
 
     let CaptureWindow(hwnd, x, y, w, h) =
         BringToFront(hwnd) |> ignore
-        let hr = WindowRect(hwnd)
-        let sc = new Rect(x + hr.X + 0.5, y + hr.Y + 0.5, w, h)
+        let wr = WindowRect(hwnd)
+        let sc = new Rect(x + wr.X, y + wr.Y, w, h)
         CaptureScreenRect(sc)
 
 
