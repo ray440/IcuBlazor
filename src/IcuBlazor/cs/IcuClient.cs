@@ -224,6 +224,8 @@ namespace IcuBlazor
         
         public IcuClient(IcuConfig config, RPC.IProxy rpc)
         {
+            if (!ENV.IsWasm)
+                config.SessionID = Guid.NewGuid().ToString();
             this.Config = config;
             this.Session = new IcuSession(config, rpc);
             this.MsgBus = Session.MsgBus;
@@ -237,7 +239,6 @@ namespace IcuBlazor
         internal string GetLogo()
         {
             return "http://icublazor.com/docs/images/logo-dark.svg?help_102";
-            //return "/logo-dark.svg?help_102";
         }
 
         public string ConfigKey(string part)
@@ -285,12 +286,11 @@ namespace IcuBlazor
 
         internal async Task InitAsync()
         {
-            var js = UI.JS;
-            await js.CheckIcuInstallation();
+            await UI.JS.CheckIcuInstallation();
             await LoadConfig();
             Session.Validate();
             if (Config.EnableServer && Config.CanSaveTestData)
-                await js.InitBrowserCapture(Session);
+                await UI.JS.InitBrowserCapture(Session);
         }
 
         static internal IcuClient Fetch(IServiceProvider sp)
