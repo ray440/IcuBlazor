@@ -25,12 +25,12 @@ namespace Server.SSBLinked
             CreateHostBuilder(args).Build().Run();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+        public static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            return Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder => {
                     webBuilder.UseStartup<Startup>();
-                    // for `dotnet run` default url
-                    //.UseUrls("https://localhost:5001");
                 });
+        }
     }
 }
