@@ -82,9 +82,31 @@
 
 @code {
 
+    // Create a wrapper around CompareDiv() to make a better testName 
+    // that distinguishes different browsers & monitor scales.
+    public async Task CompareExt(Checker cx, string name, string selector = "#icu-test-div")
+    {
+        var z = await getZoom();
+        var extended_name = $"{ENV.Browser}_{z}\\{name}";
+        await CompareDiv(cx, extended_name, selector);
+    }
+
+    string zoomStr = null;
+
+    async Task<string> getZoom()
+    {
+        if (zoomStr==null) {
+            var r = await this.UI.EvalJson<double>("window.devicePixelRatio");
+            var z = (int)(r*100);
+            zoomStr = $"x{z}";
+        }
+        return zoomStr;
+    }
+
+
     public async Task Test_init_form(Checker cx)
     {
-        await CompareDiv(cx, "init");
+        await CompareExt(cx, "init");
 
         var inputName = await UI.Find("#uname");
         var inputEmail = await UI.Find("#uemail");
@@ -92,7 +114,7 @@
         await UI.SetValue(inputName, "Samwise Gamgee");
         await UI.SetValue(inputEmail, "sgamgee@me.com");
         await UI.SetValue(inputAge, "52");
-        await CompareDiv(cx, "form_filled");
+        await CompareExt(cx, "form_filled");
     }
 
     public async Task Test_gender_and_hobbies_entry(Checker cx)
@@ -100,40 +122,40 @@
         var optFemale = await UI.Find("label", "Female");
         var optMale = await UI.Find("label", "Male");
         await UI.Click(optFemale);
-        await CompareDiv(cx, "click_female");
+        await CompareExt(cx, "click_female");
         await UI.Click(optMale);
-        await CompareDiv(cx, "click_male");
+        await CompareExt(cx, "click_male");
 
         var opt11s = await UI.Find("label", "Elevenses");
         var optBreakfast = await UI.Find("label", "Breakfast");
         await UI.Click(optBreakfast);
-        await CompareDiv(cx, "click_breakfast");
+        await CompareExt(cx, "click_breakfast");
         await UI.Click(opt11s);
-        await CompareDiv(cx, "click_11s");
+        await CompareExt(cx, "click_11s");
     }
 
     public async Task Test_password_entry(Checker cx)
     {
         var inputPass = await UI.Find("#pass");
         await UI.SetValue(inputPass, "Rosie3020");
-        await CompareDiv(cx, "password_set", "#pass");
+        await CompareExt(cx, "password_set", "#pass");
     }
 
     public async Task Test_country_entry(Checker cx)
     {
         var input = await UI.Find(".country");
         await UI.SetValue(input, "Can change");
-        await CompareDiv(cx, "country_change", ".country");
+        await CompareExt(cx, "country_change", ".country");
     }
 
     public async Task Test_city_entry(Checker cx)
     {
         var id = ".city-dropdown";
         var input= await UI.Find("#city");
-        await CompareDiv(cx, "city_select_start", id); 
+        await CompareExt(cx, "city_select_start", id);
         await UI.SetValue(input, "miami");
-        await CompareDiv(cx, "city_select_empty", id);
+        await CompareExt(cx, "city_select_empty", id);
         await UI.SetValue(input, "Hobbiton");
-        await CompareDiv(cx, "city_select_ok", id);
+        await CompareExt(cx, "city_select_ok", id);
     }
 }
