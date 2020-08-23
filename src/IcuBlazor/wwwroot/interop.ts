@@ -78,6 +78,9 @@ namespace IcuTest { // eslint-disable-line
             this.tx = tx;
             this.ty = ty;
         }
+        resetTransform = () => {
+            this.setTransform(0.0, 0.0, 1 / window.devicePixelRatio);
+        }
         applyTransform = () => {
             const s = this.sc.toString();
             this.e.style.transform = "matrix(" +
@@ -146,9 +149,8 @@ namespace IcuTest { // eslint-disable-line
                 case 107:                   // equal `=` 
                 case 187: ds = -1; break;   // plus `+`
                 case 48:                    // '0'
-                case 114: case 82:          // 'r' to reset
-                    this.setTransform(0.0, 0.0, 1.0);
-                    break;
+                case 114:
+                case 82: this.resetTransform(); break; // 'r' to reset                    
                 default: break;
             }
             const mag = 20;
@@ -171,6 +173,7 @@ namespace IcuTest { // eslint-disable-line
             e.style.outline = "none";
             e.style.transformOrigin = "0 0 0";
 
+            this.resetTransform();
             this.applyTransform();
         }
 
@@ -195,10 +198,6 @@ namespace IcuTest { // eslint-disable-line
         }
         public InitBrowserCapture(title: string, start: boolean) {
             if (start) {
-                //const r = window.devicePixelRatio;
-                //if (r !== 1.0)
-                //    throw ("Browser zoom is " + r + ".  For consistent tests it must be 1.0");
-
                 const prev = document.title;
                 document.title = title;
                 document.body.insertAdjacentHTML("afterbegin",
@@ -215,9 +214,8 @@ namespace IcuTest { // eslint-disable-line
         public GetPosition(sel: string) {
             const e = Automation.findOne(sel);
             const b = e.getBoundingClientRect();
-            //const r=window.devicePixelRatio;
-            //const js=JSON.stringify([r*b.left, r*b.top, r*b.width, r*b.height]);
-            const js = JSON.stringify([b.left, b.top, b.width, b.height]);
+            const r = window.devicePixelRatio;
+            const js = JSON.stringify([r*b.left, r*b.top, r*b.width, r*b.height]);
             return js;
         }
         public SyncScrollbars(leftPanel: HTMLElement, rightPanel: HTMLElement) {
