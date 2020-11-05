@@ -3,11 +3,11 @@
 @using Microsoft.AspNetCore.Components.Forms
 
 @code {
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
     [Parameter] public EventCallback<string> OnSubmit { get; set; }
 
-    IcuConfig c;
-    EditContext editContext;
+    IcuConfig c = null!; // ok init.
+    EditContext editContext = null!; // ok init.
 
     protected override void OnInitialized() {
         c = ICU.Config;
@@ -27,11 +27,7 @@
 }
 
 
-<br/>
-<h2>ICU Blazor Settings</h2>
-
-<IcuEditForm class="icu-form icu-settings-form xlabel-above" 
-             EditContext="@editContext">
+<EditForm class="icu-form xlabel-above" style="background:#fff" EditContext="@editContext">
     <EditFormEntry>
         @*<hr />*@
         <DataAnnotationsValidator />
@@ -60,18 +56,17 @@
         <InputCheckbox @bind-Value="c.StopOnFirstFailure" /> Abort on first exception
     </EditFormEntry>
 
-    <EditFormEntry>
+    <!--<EditFormEntry>
         <hr />
         <GridLayout Cols="50% 1fr 1fr">
             <div></div>
 
             <div></div>
-            <div class="button btn-primary" @onclick="@(()=>submit("close"))">Close</div>
+            <div class="button btn-primary" @onclick="@(()=>submit("close"))">Close</div>-->
 
             @*<div class="button btn-secondary" @onclick="@(()=>submit("close"))">Close</div>
             <div class="button btn-primary"   @onclick="@(()=>submit("save"))">Save</div>*@
-        </GridLayout>
-    </EditFormEntry>
-</IcuEditForm>
-<br/>
-<br/>
+        <!--</GridLayout>
+    </EditFormEntry>-->
+
+</EditForm>
