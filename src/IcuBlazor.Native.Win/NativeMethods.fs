@@ -85,23 +85,19 @@ module internal Win =
         EnumWindows(callback, IntPtr.Zero) |> ignore
         windows
 
-    let GetWindowWithText(hWnd) =
-        let size = GetWindowTextLength(hWnd)
-        if (size = 0) then
-            ""
-        else 
-            let builder = new StringBuilder(size + 1)
-            GetWindowText(hWnd, builder, builder.Capacity) |> ignore
-            builder.ToString()
-
     let FindWindowsWithText(titleText:string) =
-        FindWindows(fun(wnd, param) ->
-            let t = GetWindowWithText(wnd)
-            t.Contains(titleText)
-        )
+        let with_title(hWnd) =
+            let size = GetWindowTextLength(hWnd)
+            match size with
+            | 0 -> false
+            | _ ->
+                let builder = new StringBuilder(size + 1)
+                GetWindowText(hWnd, builder, builder.Capacity) |> ignore
+                builder.ToString().Contains(titleText)
 
-    let CaptureScreenRect(r:Rect) =
-        let (x, y, w, h) = (int r.X, int r.Y, int r.Width, int r.Height)
+        FindWindows(fun(wnd, param) -> with_title(wnd))
+
+    let CaptureScreenRect(x:int, y:int, w:int, h:int) =
         use image = new Bitmap(w,h)
         use gr = Graphics.FromImage(image)
         gr.CopyFromScreen(x, y, 0, 0, new System.Drawing.Size(w, h))            
@@ -109,10 +105,7 @@ module internal Win =
             image.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty,
             BitmapSizeOptions.FromEmptyOptions())
 
-    let CaptureWindow(hwnd, x, y, w, h) =
+    let CaptureWindow(hwnd, x, y, w:float, h:float) =
         BringToFront(hwnd) |> ignore
         let wr = WindowRect(hwnd)
-        let sc = new Rect(x + wr.X, y + wr.Y, w, h)
-        CaptureScreenRect(sc)
-
-
+        CaptureScreenRect(int(x + wr.X), int(y + wr.Y), int w, int h)
