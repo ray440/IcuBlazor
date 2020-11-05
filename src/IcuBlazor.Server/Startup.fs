@@ -46,7 +46,7 @@ type Startup (configuration: IConfiguration) =
         if (env.IsDevelopment()) then
             app
                 .UseDeveloperExceptionPage()
-                .UseBlazorDebugging()
+                //.UseBlazorDebugging()
                 |> ignore
         app
             .UseStaticFiles()
