@@ -1,0 +1,21 @@
+﻿@page "/Debug"
+
+@using IcuBlazor.razor
+
+@code {
+    [Parameter] public object? v { get; set; }
+    [Parameter] public int Depth { get; set; } = 0;
+    string toStr() { return Conv.AsString(v, 2, Depth); }
+}
+@{
+    //DBG.Log(toStr());
+}
+
+<DropDown>
+    <LabelContent>
+        <span class="dbg-label">[+]</span>
+    </LabelContent>
+    <DropContent>
+        <pre class="dbg-drop">@(toStr())</pre>
+    </DropContent>
+</DropDown>
