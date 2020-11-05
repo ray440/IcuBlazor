@@ -1,0 +1,133 @@
+﻿@page "/DropDown"
+
+@using System.Drawing;
+
+@inject UIHelper UI
+
+@code {
+    [Parameter] public string Label { get; set; } = "[+]";
+    [Parameter] public string Drop { get; set; } = "--";
+    [Parameter] public RenderFragment? LabelContent { get; set; }
+    [Parameter] public RenderFragment? DropContent { get; set; }
+    [Parameter] public string Width { get; set; } = "max-content";
+    [Parameter] public bool OpenOnHover { get; set; } = false;
+    [Parameter] public EventCallback<bool> OnShown { get; set; }
+
+    string dropid = BaseUtils.PrefixedID("drop-");
+    RectangleF winRect = RectangleF.Empty;
+    RectangleF labelRect = RectangleF.Empty;
+    RectangleF dropRect = RectangleF.Empty;
+    static DropDown? last = null;
+
+    public bool show_drop = false;
+    public Task Update() { return base.InvokeAsync(StateHasChanged); }
+
+    void set_show(bool open) {
+        if (open) { // close prev DropDown
+            if (last!=null && last.show_drop) {
+                last.show_drop = false;
+                last.Update();
+            }
+            last = this;
+        }
+        show_drop = open;
+        OnShown.InvokeAsync(open);
+    }
+
+    void clicked_label() {
+        if (!OpenOnHover) {
+            set_show(!show_drop);
+        }
+    }
+
+    void clicked_outside() {
+        set_show(false);
+    }
+
+    async Task get_positions()
+    {
+        winRect   = await UI.JS.GetClientRect("");
+        labelRect = await UI.JS.GetClientRect($"#{dropid}");
+        dropRect  = await UI.JS.GetClientRect($"#{dropid} .drop");
+        StateHasChanged();
+    }
+
+    //async Task change_check()
+    //{
+    //    await Task.Delay(100);
+    //    var r = await UI.JS.GetClientRect("");
+    //    if (r.Width != br.Width || r.Height != br.Height) {
+    //        await get_positions();
+    //        StateHasChanged();
+    //    }
+    //}
+
+    (float, float) drop_position()
+    {
+        if (dropRect == RectangleF.Empty)
+            return (0, 0);
+
+        // try to position dropdown so it's in the viewport
+        var (north, west) = (-1, 0);
+        if (labelRect.X + dropRect.Width > winRect.Width
+            && labelRect.X - dropRect.Width > 0)
+            west = 1;
+        //if (labelRect.Y+labelRect.Height + dropRect.Height > winRect.Height
+        //    && labelRect.Y - dropRect.Height > 0)
+        //    north = 1;
+
+        var top = north switch {
+            -1 => labelRect.Height,
+            1 => -dropRect.Height,
+            _ => 0,
+        };
+        var left = west switch {
+            -1 => labelRect.Width,
+            1 => labelRect.Width-dropRect.Width,
+            _ => 0,
+        };
+        return (top, left);
+    }
+
+    string drop_style()
+    {
+        var (t, l) = drop_position();
+        return $"width:{Width};top:{t}px;left:{l}px;"
+                + (show_drop ? "visibility: visible;" : "");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender && dropRect==RectangleF.Empty) {
+            await get_positions();
+        }
+        //change_check(); // f&f
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+}
+
+@{
+    var ss = drop_style();
+    var cs = OpenOnHover ? "hover-actions" : "";
+}
+
+@if (show_drop) {
+    <div class="overlay" @onclick=@clicked_outside></div>
+}
+<div id=@dropid class="dropdown-wrapper">
+    <div @onclick="@clicked_label">
+    @if (LabelContent != null) {
+        @LabelContent
+    } else {
+        @Label
+    }
+    </div>
+    <div class="drop @cs" style=@ss>
+        @if (DropContent != null) {
+            @DropContent
+        } else {
+            <div class="drop-default">@Drop</div>
+        }
+    </div>    
+</div>

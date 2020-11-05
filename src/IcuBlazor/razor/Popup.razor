@@ -1,27 +1,25 @@
 ﻿@page "/Popup"
 
+@inject UIHelper UI
+
 @code {
-    [Parameter] public string Title { get; set; }
+    [Parameter] public string Title { get; set; } = "[+]";
     [Parameter] public bool Show { get; set; } = false;
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
 
     public void ToggleShow() {
         Show = !Show;
+        //DBG.Info($"set Show = {Show}");
         StateHasChanged();
+        //base.InvokeAsync(StateHasChanged);
     }
-
 }
 
-<Styled>
-.icu .popup {
-    border-radius: 0px;
-    border: 0.2em solid #ccc;
-    background:#eee;
+@{
+    //UI.Log($"Show = {Show}");
 }
-</Styled>
-
 @if (Show) {
-    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+    <div class="modal popup-dialog" tabindex="-1" role="dialog">
         <div class="modal-dialog">
             <GridLayout Cols="1fr auto" class="modal-content popup">
                     

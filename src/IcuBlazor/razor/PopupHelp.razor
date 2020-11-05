@@ -1,0 +1,71 @@
+﻿@page "/PopupHelp"
+
+@code {
+    [Parameter] public string name { get; set; } = null!; // required
+}
+
+@if (name=="Text") {
+    <div class="help">
+        You can use these shortcut keys:<br/><br/>
+        <GridLayout Cols="auto 1fr">
+            <div>
+                <span class="btn-dark btn-key">L</span>, 
+                <span class="btn-dark btn-key">3</span>, 
+                <span class="btn-dark btn-key">#</span>
+            </div>
+            <div> &nbsp; Show line numbers </div>
+
+            <div>
+                <span class="btn-dark btn-key">D</span>, 
+                <span class="btn-dark btn-key">=</span>
+            </div>
+            <div> &nbsp; Show identical lines </div>
+        </GridLayout>
+    </div>
+}
+@if (name=="Image") {
+    <div class="help">
+        You can use these following interactions:<br/><br/>
+        <GridLayout Cols="auto 1fr">
+            <div>
+                <span class="btn-dark btn-key">Scroll Wheel</span>
+            </div>
+            <div> &nbsp; Zoom in/out image </div>
+            <div>
+                <span class="btn-dark btn-key">+</span> /
+                <span class="btn-dark btn-key">-</span>
+            </div>
+            <div> &nbsp; Zoom in/out image </div>
+
+            <div>
+                <span class="btn-dark btn-key">Mouse Drag</span>
+            </div>
+            <div> &nbsp; Move image</div>
+            <div>
+                <span class="btn-dark btn-key">Arrow Keys</span>
+            </div>
+            <div> &nbsp; Move image</div>
+
+            <div>
+                <span class="btn-dark btn-key">0</span> / 
+                <span class="btn-dark btn-key">R</span>
+            </div>
+            <div> &nbsp; Reset image </div>
+
+            <div>
+                <span class="btn-dark btn-key">P</span>
+            </div>
+            <div> &nbsp; Pixelate/Smooth image </div>
+
+            <div>
+                <span class="btn-dark btn-key">1</span> / 
+                <span class="btn-dark btn-key">2</span> /
+                <span class="btn-dark btn-key">3</span>
+            </div>
+            <div> &nbsp; Show New/Old/Diff image </div>
+        </GridLayout>
+        <br/>
+    </div>
+}
+
+
