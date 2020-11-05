@@ -9,7 +9,6 @@ open System.Windows.Media.Imaging
 
 module private XBM =
 
-    [<PermissionSet(SecurityAction.Assert, Name = "FullTrust")>] // FxCop: LinkDemand on BitsPerPixel
     let Stride(image:BitmapSource) =  
         // perhaps only true for RGBA type bitmaps
         image.PixelWidth * ((image.Format.BitsPerPixel + 7) / 8)
@@ -156,7 +155,6 @@ module XBitmap =
 
     let FindPixels(image, m) = find_pixels(image, m)
 
-    [<PermissionSet(SecurityAction.Assert, Name="FullTrust")>] // FxCop: LinkDemand on Save()
     let Save(fileName, image:BitmapSource) =
         let enc = new PngBitmapEncoder()
         enc.Frames.Add(BitmapFrame.Create(image))

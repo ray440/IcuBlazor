@@ -1,5 +1,5 @@
 ﻿<div class="top-row pl-4 navbar navbar-dark">
-    <a class="navbar-brand" href="">Samples (@Apphost)</a>
+    <a class="navbar-brand" href="">IcuBlazor Samples</a>
     <button class="navbar-toggler" @onclick="ToggleNavMenu">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -55,7 +55,6 @@
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-    private string Apphost => IcuBlazor.ENV.IsWasm ? "CSB" : "SSB";
 
     private void ToggleNavMenu()
     {
