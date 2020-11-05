@@ -1,0 +1,6 @@
+.info {
+  border-left: 0.4em solid rgba(0, 0, 0, 0.2);
+  padding: 0 0.5em;
+  font-size: 70%;
+  user-select: none;
+}

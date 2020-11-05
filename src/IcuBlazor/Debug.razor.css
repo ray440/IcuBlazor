@@ -1,0 +1,17 @@
+.dbg-area {
+  background: #111111;
+  color: #eeeeee;
+}
+.dbg-label {
+  background: #111111;
+  color: #eeeeee;
+  display: inline;
+}
+.dbg-drop {
+  background: #111111;
+  color: #eeeeee;
+  padding: 0.2em 0.5em;
+  font-size: 75%;
+  max-height: 30em;
+  max-width: 50em;
+}

@@ -1,0 +1,24 @@
+﻿
+.diff-pane {
+    height: auto;
+    max-height: 30em;
+    padding: 0.25em;
+    background: #fff;
+    outline: medium;// none;
+
+    .lineNumber {
+        color: #aaa;
+        background-color: #fff;
+        text-align: right;
+    }
+}
+
+.old-pane {  // vertical scrollbar tied to new-pane
+    .diff-pane;
+    overflow: auto hidden;
+}
+.new-pane {
+    .diff-pane;
+    overflow: auto auto;
+}
+

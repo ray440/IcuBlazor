@@ -1,0 +1,38 @@
+.diff-pane {
+  height: auto;
+  max-height: 30em;
+  padding: 0.25em;
+  background: white;
+  outline: medium;
+}
+.diff-pane .lineNumber {
+  color: #aaaaaa;
+  background-color: white;
+  text-align: right;
+}
+.old-pane {
+  height: auto;
+  max-height: 30em;
+  padding: 0.25em;
+  background: white;
+  outline: medium;
+  overflow: auto hidden;
+}
+.old-pane .lineNumber {
+  color: #aaaaaa;
+  background-color: white;
+  text-align: right;
+}
+.new-pane {
+  height: auto;
+  max-height: 30em;
+  padding: 0.25em;
+  background: white;
+  outline: medium;
+  overflow: auto auto;
+}
+.new-pane .lineNumber {
+  color: #aaaaaa;
+  background-color: white;
+  text-align: right;
+}

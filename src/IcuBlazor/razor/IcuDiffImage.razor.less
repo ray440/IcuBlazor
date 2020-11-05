@@ -1,0 +1,34 @@
+﻿.image-holder {
+    background: rgba(0,0,0,0.3);
+    overflow: auto;
+    height: auto;
+    max-height: 30em;
+    resize: vertical;
+    padding: 0.4em;
+    display: grid;
+}
+
+.image-holder > img {
+    grid-area: 1 / 1 / 1 / 1;
+    overflow: hidden;
+    width: auto;
+    height: auto;
+}
+
+.img-sizer { 
+    // Used to resize parent to fit the largest child.
+    // Hidden but takes up space. 
+    visibility: hidden;
+}
+
+.pixelate-pix { // for Chrome
+    image-rendering: pixelated;
+}
+.pixelate-crisp { // for firefox
+    image-rendering: crisp-edges;
+}
+
+//.btn-lined { // can't mixin b/c they are isolated...zzz
+//    .hover-brighter;
+//    .hover-lined;
+//}

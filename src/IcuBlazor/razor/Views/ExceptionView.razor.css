@@ -1,0 +1,9 @@
+.exception-box {
+  background: #ffeeee;
+  border-left: 0.4em solid #ff2222;
+  padding: 0.2em 0.5em;
+}
+.exception-box .hdr {
+  font-size: 120%;
+  font-weight: bold;
+}

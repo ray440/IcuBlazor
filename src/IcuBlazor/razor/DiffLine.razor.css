@@ -1,0 +1,39 @@
+.line {
+  white-space: nowrap;
+  width: 100%;
+}
+.piece {
+  display: inline-block;
+  box-sizing: border-box;
+  white-space: pre;
+}
+.pieceHolder {
+  display: flex;
+  flex-flow: row nowrap;
+}
+.tear {
+  height: 0.5em;
+  width: 100%;
+  border-bottom: 0.1em #dddddd dashed;
+}
+.CharInserted {
+  background-color: #aaffaa;
+}
+.CharDeleted {
+  background-color: #ffaaaa;
+}
+.LineModified {
+  background-color: #eeffee;
+}
+.LineInserted {
+  background-color: #eeffee;
+}
+.LineDeleted {
+  background-color: #ffeeee;
+}
+.LineUnchanged {
+  background-color: white;
+}
+.LineImaginary {
+  background-color: #eeeeee;
+}

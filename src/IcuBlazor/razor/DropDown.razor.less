@@ -1,0 +1,23 @@
+﻿@import "..\css-vars";
+
+.dropdown-wrapper {
+    position: relative;
+
+    .drop-default {
+        color: #fff;
+        background-color: #363636;
+        text-align: center;
+        border-radius: 6px;
+        padding: 0.2em 0.5em;
+    }
+
+    .drop {
+        visibility: hidden;
+        position: absolute;
+        z-index: @overlay-depth + 1;
+    }
+
+    &:hover .hover-actions {
+        visibility: visible;
+    }
+}

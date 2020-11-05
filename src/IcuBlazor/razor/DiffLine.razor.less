@@ -1,0 +1,37 @@
+﻿.line {
+    white-space: nowrap;
+    width: 100%;
+}
+
+.piece {
+    display: inline-block;
+    box-sizing: border-box;
+    white-space: pre;
+}
+
+.pieceHolder {
+    display: flex;
+    flex-flow: row nowrap;
+}
+
+.tear {
+    height: 0.5em;
+    width: 100%;
+    border-bottom: 0.1em #ddd dashed;
+}
+
+.CharInserted  { background-color: #afa; }
+.CharDeleted   { background-color: #faa; }
+.CharUnchanged {}
+.CharImaginary {}
+
+.LineModified  { background-color: #efe; }
+.LineInserted  { background-color: #efe; }
+.LineDeleted   { background-color: #fee; }
+.LineUnchanged { background-color: #fff; }
+.LineImaginary {
+    // zzz hatch marks don't work well in Firefox
+    //background-image: linear-gradient(-45deg, #888 5%, transparent 5%, transparent 50%, #888 50%, #888 55%, transparent 55%, transparent 95% );
+    //background-size: 0.5em 0.5em;
+    background-color: #eee;
+}

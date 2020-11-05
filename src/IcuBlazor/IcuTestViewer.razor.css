@@ -1,0 +1,193 @@
+.icu ::deep {
+  font-family: Verdana, Tahoma, Geneva, sans-serif;
+  background: #e0e0e020;
+}
+.icu ::deep .fillw {
+  width: 100%;
+}
+.icu ::deep .dbg {
+  border: 1px dashed red;
+}
+.icu ::deep .flexrow {
+  display: flex;
+  flex-flow: row nowrap;
+}
+.icu ::deep .flex-grow {
+  flex: 1 1 0;
+}
+.icu ::deep .muted-text {
+  color: rgba(0, 0, 0, 0.5);
+}
+.icu ::deep .fixed-font {
+  font-family: 'Lucida Console', Monaco, monospace;
+}
+.icu ::deep pre {
+  font-size: 80%;
+  margin: 0;
+}
+.icu ::deep .box {
+  margin: 0 0;
+  padding: 0 0.3em;
+  align-items: center;
+}
+.icu ::deep .btnbox {
+  margin: 0 0;
+  padding: 0 0.3em;
+  align-items: center;
+  text-align: center;
+  user-select: none;
+}
+.icu ::deep .no-padding {
+  padding: 0;
+}
+.icu ::deep .darker5 {
+  background: rgba(0, 0, 0, 0.05);
+}
+.icu ::deep .darker10 {
+  background: rgba(0, 0, 0, 0.1);
+}
+.icu ::deep .hover-brighter {
+  opacity: 0.75;
+}
+.icu ::deep .hover-brighter:hover {
+  opacity: 1;
+}
+.icu ::deep .hover-darker10:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+.icu ::deep .hover-lighter10:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.icu ::deep .hover-lighter40:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+.icu ::deep .hover-lined {
+  border-width: 0px;
+  border-bottom: 0.2em solid rgba(0, 0, 0, 0.1);
+}
+.icu ::deep .hover-lined:hover {
+  border-bottom-color: black;
+}
+.icu ::deep .box-pass {
+  background: #eeffee;
+  border-color: #22bb22;
+}
+.icu ::deep .box-fail {
+  background: #ffeeee;
+  border-color: #bb2222;
+}
+.icu ::deep .box-skip {
+  background: #ffffee;
+  border-color: #bbbb22;
+}
+.icu ::deep .box-unknown {
+  background: #ffffee;
+  border-color: #bbbb22;
+}
+.icu ::deep .toolbar {
+  grid-template-columns: 1fr repeat(3, auto);
+  align-items: center;
+}
+.icu ::deep .toolbar .widen {
+  padding: 0.1em 0.7em;
+}
+.icu ::deep .oi {
+  line-height: 1.5;
+}
+.icu ::deep .help {
+  border-radius: 0px;
+  border: 0.2em solid #cccccc;
+  background: #eeeeee;
+  padding: 0.3em 0.5em;
+}
+.icu ::deep .help .btn-key {
+  font-family: 'Lucida Console', Monaco, monospace;
+  border-radius: 0.25rem;
+  padding: 0.2em 0.4em;
+}
+.icu ::deep .overlay {
+  position: fixed;
+  /* Sit on top of the page content */
+  display: block;
+  /* Hidden by default */
+  width: 100%;
+  /* Full width (cover the whole page) */
+  height: 100%;
+  /* Full height (cover the whole page) */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  /* Black background with opacity */
+  z-index: 10;
+  /* Specify a stack order in case you're using a different order for other elements */
+  cursor: pointer;
+  /* Add a pointer on hover */
+
+}
+.icu ::deep .icu-form {
+  border: 0.1em solid rgba(0, 0, 0, 0.2);
+  font-family: Verdana, Tahoma, Geneva, sans-serif;
+  background: rgba(0, 0, 0, 0.02);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto;
+  grid-gap: 0.2em 0.5em;
+  padding: 1em 1em;
+}
+.icu ::deep .icu-form .label-above {
+  grid-template-columns: 1fr;
+  grid-gap: 0.5em 0em;
+}
+.icu ::deep .icu-form .footer {
+  margin-top: 1em;
+}
+.icu ::deep .icu-form .entry {
+  width: 100%;
+}
+.icu ::deep .icu-form > label {
+  grid-column: 0.5;
+  width: 100%;
+  text-align: right;
+  font-weight: bold;
+  color: rgba(0, 0, 0, 0.3);
+}
+.icu ::deep .icu-form .label-above > label {
+  grid-template-columns: 1fr;
+  text-align: left;
+  font-variant: small-caps;
+  margin: 0.25em 0 -0.5em 0;
+}
+.icu ::deep .icu-form input,
+.icu ::deep .icu-form select,
+.icu ::deep .icu-form textarea,
+.icu ::deep .icu-form .uneditable-input {
+  width: 100%;
+  font-size: inherit;
+  font-family: inherit;
+  outline: none !important;
+  border-radius: 0px;
+  border-width: 0px;
+  border-bottom: 0.1em solid #cccccc;
+  padding: 0.1em 0.5em;
+  height: auto;
+  color: black;
+  background: rgba(0, 0, 0, 0.05);
+}
+.icu ::deep .icu-form .button {
+  text-align: center;
+  padding: 0.2em 1em;
+}
+.icu ::deep .icu-form input[type="checkbox"] {
+  width: 1.5em;
+  border: 0.1em solid #cccccc;
+}
+.icu ::deep .icu-form input:hover,
+.icu ::deep .icu-form select:hover,
+.icu ::deep .icu-form textarea:hover {
+  border-bottom-color: #6666ff;
+}
+.icu ::deep .icu-form .modified .invalid {
+  border-color: #bb2222;
+}

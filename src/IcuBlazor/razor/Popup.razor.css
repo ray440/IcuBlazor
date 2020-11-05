@@ -1,0 +1,14 @@
+.popup-dialog {
+  display: block;
+  overflow: visible;
+}
+.popup {
+  border-radius: 0px;
+  border: 0.2em solid #cccccc;
+  background: #eeeeee;
+}
+::deep .btn-key {
+  font-family: 'Lucida Console', Monaco, monospace;
+  border-radius: 0.25rem;
+  padding: 0.2em 0.4em;
+}

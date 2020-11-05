@@ -1,0 +1,24 @@
+.image-holder {
+  background: rgba(0, 0, 0, 0.3);
+  overflow: auto;
+  height: auto;
+  max-height: 30em;
+  resize: vertical;
+  padding: 0.4em;
+  display: grid;
+}
+.image-holder > img {
+  grid-area: 1;
+  overflow: hidden;
+  width: auto;
+  height: auto;
+}
+.img-sizer {
+  visibility: hidden;
+}
+.pixelate-pix {
+  image-rendering: pixelated;
+}
+.pixelate-crisp {
+  image-rendering: crisp-edges;
+}

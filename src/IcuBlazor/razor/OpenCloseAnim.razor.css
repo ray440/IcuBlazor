@@ -1,0 +1,6 @@
+.slide {
+  transition: ease-out;
+}
+.slide.open {
+  transition: ease-in;
+}

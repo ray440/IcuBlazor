@@ -1,0 +1,16 @@
+.x-icon {
+  width: 1.5em;
+  text-align: center;
+}
+.fg-plain {
+  color: #888888;
+}
+.fg-pass {
+  color: #22bb22;
+}
+.fg-fail {
+  color: #bb2222;
+}
+.fg-skip {
+  color: #bbbb22;
+}

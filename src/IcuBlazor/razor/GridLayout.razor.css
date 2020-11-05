@@ -1,0 +1,12 @@
+.grid-layout {
+  display: grid;
+  grid-template-rows: auto;
+  grid-gap: 0.4em 0.4em;
+  padding: 0.4em;
+}
+/*
+    @*.grid-layout > * {
+    border: 1px dashed red;
+}
+*/
+

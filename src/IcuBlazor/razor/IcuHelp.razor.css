@@ -1,0 +1,14 @@
+.help {
+  font-family: 'Lucida Console', Monaco, monospace;
+  font-size: 80%;
+  background: #ffeeee;
+  padding: 0.5em;
+  border: 0.1em solid red;
+}
+.help .also {
+  padding: 0.3em;
+  background: rgba(0, 0, 0, 0.05);
+}
+.help .also:hover {
+  background: rgba(0, 0, 0, 0.3);
+}

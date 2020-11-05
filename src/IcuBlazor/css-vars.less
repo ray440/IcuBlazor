@@ -1,0 +1,41 @@
+﻿
+@font:          Verdana, Tahoma, Geneva, sans-serif;
+@font-fixed:    'Lucida Console', Monaco, monospace;
+
+@accent:        #66f;
+@pass-light:    #efe;
+@pass-dark:     #2b2;
+
+@fail-color:    #f88;
+@fail-light:    #fee;
+@fail-dark:     #b22;
+
+@skip-light:    #ffe;
+@skip-dark:     #bb2;
+
+@plain:         #888;
+@plain-light:   #ddd;
+@plain-dark:    #222;
+
+@overlay-depth: 10;
+
+//@cfoo: tint(@fail-light, -20%);
+
+.bg-darker(@x)  { background: rgba(0,0,0,@x); }
+.bg-lighter(@x) { background: rgba(255,255,255,@x); }
+
+.lighter(@x) {
+    .lighter@{x} {
+        .bg-lighter(@x/100);
+    }
+}
+.darker(@x) {
+    .darker@{x} {
+        .bg-darker(@x/100);
+    }
+}
+
+@dark05: rgba(0,0,0,0.05);
+@dark10: rgba(0,0,0,0.10);
+@dark20: rgba(0,0,0,0.20);
+@dark30: rgba(0,0,0,0.30);

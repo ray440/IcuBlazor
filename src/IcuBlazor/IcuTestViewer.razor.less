@@ -1,0 +1,251 @@
+﻿@import "css-vars";
+
+.icu ::deep {
+
+    .fillw {
+        width: 100%;
+    }
+
+    .dbg {
+        border: 1px dashed red;
+    }
+
+    .flexrow {
+        display: flex;
+        flex-flow: row nowrap;
+    }
+
+    .flex-grow {
+        flex: 1 1 0;
+    }
+
+    .muted-text {
+        color: rgba(0, 0, 0, 0.5);
+    }
+
+    .fixed-font {
+        font-family: @font-fixed;
+    }
+
+    pre {
+        font-size: 80%;
+        margin: 0;
+    }
+
+    .box {
+        margin: 0 0;
+        padding: 0 0.3em;
+        align-items: center;
+    }
+
+    .btnbox {
+        margin: 0 0;
+        padding: 0 0.3em;
+        align-items: center;
+        text-align: center;
+        user-select: none;
+    }
+
+    .no-padding {
+        padding: 0;
+    }
+
+    .darker(5);
+    .darker(10);
+
+    .hover-brighter {
+        opacity: 0.75;
+
+        &:hover {
+            opacity: 1.0;
+        }
+    }
+
+    .hover-darker10 {
+        &:hover {
+            .bg-darker(0.1);
+        }
+    }
+
+    .hover-lighter10 {
+        &:hover {
+            .bg-lighter(0.1);
+        }
+    }
+
+    .hover-lighter40 {
+        &:hover {
+            .bg-lighter(0.4);
+        }
+    }
+
+    .hover-lined {
+        border-width: 0px;
+        border-bottom: 0.2em solid rgba(0,0,0,0.1);
+
+        &:hover {
+            border-bottom-color: black;
+        }
+    }
+
+    .box-pass {
+        background: @pass-light;
+        border-color: @pass-dark;
+    }
+
+    .box-fail {
+        background: @fail-light;
+        border-color: @fail-dark;
+    }
+
+    .box-skip {
+        background: @skip-light;
+        border-color: @skip-dark;
+    }
+
+    .box-unknown {
+        background: @skip-light;
+        border-color: @skip-dark;
+    }
+
+    .toolbar {
+        grid-template-columns: 1fr repeat(3, auto);
+        align-items: center;
+
+        .widen {
+            padding: 0.1em 0.7em;
+        }
+    }
+
+    .oi { // make open-icons align with rest of text
+        line-height: 1.5;
+    }
+
+    .help {
+        border-radius: 0px;
+        border: 0.2em solid #ccc;
+        background: #eee;
+        padding: 0.3em 0.5em;
+
+        .btn-key {
+            font-family: @font-fixed;
+            border-radius: .25rem;
+            padding: 0.2em 0.4em;
+        }
+    }
+
+    .overlay {
+        position: fixed; /* Sit on top of the page content */
+        display: block; /* Hidden by default */
+        width: 100%; /* Full width (cover the whole page) */
+        height: 100%; /* Full height (cover the whole page) */
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0,0,0,0.0); /* Black background with opacity */
+        z-index: @overlay-depth; /* Specify a stack order in case you're using a different order for other elements */
+        cursor: pointer; /* Add a pointer on hover */
+    }
+
+    font-family: @font;
+    background: #e0e0e020;
+}
+
+.icu ::deep .icu-form {
+
+    border: 0.1em solid @dark20;
+    font-family: @font;
+    background: rgba(0,0,0,0.02);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto;
+    grid-gap: 0.2em 0.5em;
+    padding: 1em 1em;
+
+    .label-above {
+        grid-template-columns: 1fr;
+        grid-gap: 0.5em 0em;
+    }
+
+    .header {
+    }
+
+    .footer {
+        margin-top: 1em;
+    }
+
+    .entry {
+        width: 100%;
+    }
+
+    & > label {
+        grid-column: 1 / 2;
+        width: 100%;
+        text-align: right;
+        font-weight: bold;
+        // color: [--accent];
+        color: @dark30;
+    }
+
+    .label-above > label {
+        grid-template-columns: 1fr;
+        text-align: left;
+        //font-weight: normal;
+        //font-size: 90%;
+        font-variant: small-caps;
+        margin: 0.25em 0 -0.5em 0;
+    }
+
+
+    input,
+    select,
+    textarea,
+    // .button,
+    .uneditable-input {
+        width: 100%;
+        font-size: inherit;
+        font-family: inherit;
+        outline: none !important;
+        border-radius: 0px;
+        border-width: 0px;
+        border-bottom: 0.1em solid #ccc;
+        padding: 0.1em 0.5em;
+        height: auto;
+        color: black;
+        // font-weight:bolder;
+        background: @dark05;
+    }
+
+    .button {
+        text-align: center;
+        padding: 0.2em 1em;
+        //border: 0.2em solid @light30;
+    }
+
+    input[type="checkbox"] {
+        width: 1.5em;
+        border: 0.1em solid #ccc;
+    }
+
+    input:hover,
+    select:hover,
+    textarea:hover {
+        border-bottom-color: @accent;
+    }
+
+    .button:hover {
+        // background: @XSS.lighter(0.3) !important;
+        // border: 0.2em solid @XSS.lighter(0.3);
+    }
+
+    .modified {
+        .valid {
+            // border-bottom-color: @pass-dark;
+        }
+
+        .invalid {
+            border-color: @fail-dark;
+        }
+    }
+}

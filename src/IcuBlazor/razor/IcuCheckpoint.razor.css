@@ -1,0 +1,5 @@
+::deep .cp-toolbar {
+  width: 100%;
+  padding: 0;
+  align-items: center;
+}

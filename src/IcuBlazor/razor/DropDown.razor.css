@@ -1,0 +1,18 @@
+.dropdown-wrapper {
+  position: relative;
+}
+.dropdown-wrapper .drop-default {
+  color: white;
+  background-color: #363636;
+  text-align: center;
+  border-radius: 6px;
+  padding: 0.2em 0.5em;
+}
+.dropdown-wrapper .drop {
+  visibility: hidden;
+  position: absolute;
+  z-index: 11;
+}
+.dropdown-wrapper:hover .hover-actions {
+  visibility: visible;
+}
