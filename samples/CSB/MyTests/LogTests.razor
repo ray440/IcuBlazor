@@ -11,7 +11,7 @@
     // Take a moment to consider what code needs to be changed if we want 
     // to check the Summary field.
     //
-    // IcuBlazor Verification tests (Check.Log() & CheckDiv())
+    // IcuBlazor Verification tests (Check.TextFile() & CheckDiv())
     //  1) Eases test writing burden
     //     - Do not need to know "correct" values when writing tests.
     //  2) Reduces SUT/Test code coupling => low maintenance
@@ -38,17 +38,17 @@
         var w = new Pages.WeatherCounter.Weather();  // System Under Test (SUT)
         var sb = new StringBuilder();
         sb.AppendLine($"-- Weather init --\n");
-        sb.AppendLine(Conv.ToJson(w));
+        sb.AppendLine(Conv.AsString(w));
 
         w.TempC = -10;
         sb.AppendLine($"\n-- Weather @ {w.TempC}C --");
-        sb.AppendLine(Conv.ToJson(w));
+        sb.AppendLine(Conv.AsString(w));
 
         w.TempC = 100;
         sb.AppendLine($"\n-- Weather @ {w.TempC}C --");
-        sb.AppendLine(Conv.ToJson(w));
+        sb.AppendLine(Conv.AsString(w));
 
-        check.Log("weather", sb.ToString(), "changing weather");
+        check.TextFile("weather", sb.ToString(), "changing weather");
     }
 
 }

@@ -17,7 +17,7 @@
         //s += $"navigator.userAgent  = {ua}\n";
 
         // Make sure we have consistent image tests
-        var zoom = await this.UI.EvalJson<double>("window.devicePixelRatio");
+        var zoom = await this.UI.Eval<double>("window.devicePixelRatio");
         s += $"Browser Zoom       = {zoom}\n";
         check.Equal(1.0, zoom, "Browser zoom should be 1.0 for consistent tests");
 
@@ -33,7 +33,7 @@
         //s += $"ICU WWWroot        = {Config.WWWroot}\n";
         //s += $"ICU TestDir        = {Config.TestDir}\n";
 
-        check.Log("Info\\env_values", s, "Environment Values");
+        check.TextFile("Info\\env_values", s, "Environment Values");
     }
 
     public void TestHealth() {

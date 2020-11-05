@@ -62,7 +62,7 @@
         <label for="city">City</label>
         <span class="city-dropdown">
             <select id="city" name="city">
-                <option disabled selected>--Choose City--</option>
+                <option disabled="disabled" selected="selected">--Choose City--</option>
                 <option>Hobbiton</option>
                 <option>Bag End</option>
             </select>
@@ -84,7 +84,7 @@
 
     // Create a wrapper around CompareDiv() to make a better testName 
     // that distinguishes different browsers & monitor scales.
-    public async Task CompareExt(Checker cx, string name, string selector = "#icu-test-div")
+    public async Task CompareExt(Checker cx, string name, string selector = "")
     {
         var z = await getZoom();
         var extended_name = $"{ENV.Browser}_{z}\\{name}";
@@ -96,7 +96,7 @@
     async Task<string> getZoom()
     {
         if (zoomStr==null) {
-            var r = await this.UI.EvalJson<double>("window.devicePixelRatio");
+            var r = await this.UI.Eval<double>("window.devicePixelRatio");
             var z = (int)(r*100);
             zoomStr = $"x{z}";
         }

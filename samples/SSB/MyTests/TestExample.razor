@@ -45,7 +45,7 @@
         sb.AppendLine($"\n-- Weather @ {w.TempC}C --");
         sb.AppendLine(Conv.ToJson(w));
 
-        check.Log("weather", sb.ToString(), "changing weather");
+        check.TextFile("weather", sb.ToString(), "changing weather");
     }
 
 }
