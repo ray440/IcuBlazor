@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Drawing;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -11,113 +12,105 @@ using Microsoft.JSInterop;
 namespace IcuBlazor
 {
 
-    internal static class XSS
-    {
-        static public string darker(double x) => $"rgba(0,0,0,{x})";
-        static public string lighter(double x) => $"rgba(255,255,255,{x})";
-        static public string units(double x, string m) => $"{x}{m}";
-        static public string pixels(double x) => units(x, "px");
-    }
-
     public struct ElemRef
     {
         public int Key;
         public ElemRef(int k) { Key = k; }
     }
 
-    internal class JSInterop
+    public class JSInterop
     {
-        public readonly IJSRuntime JSR;
-        public JSInterop(IJSRuntime jsr)
+        readonly IJSRuntime JSR;
+        readonly IJSObjectReference mod;
+
+        public JSInterop(IJSObjectReference module, IJSRuntime jsr)
         {
+            mod = module;
             JSR = jsr;
         }
 
-        public ValueTask<string> Eval(string code) =>
-            JSR.InvokeAsync<string>("IcuTest.Act.Eval", code);
-        public async ValueTask<T> EvalJson<T>(string code)
+        public void Log(string s)
         {
-            var js = await JSR.InvokeAsync<string>("IcuTest.Act.EvalJson", code);
-            return Conv.FromJson<T>(js);
+            JSR.InvokeVoidAsync("console.log", s); // f&f Async Task
         }
+
+        public ValueTask<T> Eval<T>(string code) =>
+            mod.InvokeAsync<T>("Act.Eval", code);
+
         public async ValueTask<string> DetectBrowser()
         {
             string[] bs = { "Edge", "Chrome", "Firefox", "MSIE" };
-            var spec = await this.Eval("navigator.userAgent");
+            var spec = await this.Eval<string>("navigator.userAgent");
             return bs.Where((b) => spec.IndexOf(b) >= 0).First();
         }
 
+#if true
         public ValueTask<object> LS_SetItem(string key, string val) =>
-            JSR.InvokeAsync<object>("IcuTest.LS.setItem", key, val);
+            mod.InvokeAsync<object>("LS.setItem", key, val);
         public ValueTask<string> LS_GetItem(string key) =>
-            JSR.InvokeAsync<string>("IcuTest.LS.getItem", key);
+            mod.InvokeAsync<string>("LS.getItem", key);
         public ValueTask<string> LS_RemoveItem(string key) =>
-            JSR.InvokeAsync<string>("IcuTest.LS.removeItem", key);
-        //public Task LS_Clear() =>
-        //    JSR.InvokeAsync<bool>("IcuTest.LS.clear");
+            mod.InvokeAsync<string>("LS.removeItem", key);
+#else
+        // currently ProtectedLocalStorage doesn't work in the CSB Browser!
+        public ValueTask LS_SetItem(string key, string val) =>
+            LS.SetAsync(key, val);
+        public async ValueTask<string> LS_GetItem(string key)
+        {
+            var pval = await LS.GetAsync<string>(key);
+            return pval.Success ? pval.Value : "";
+        }
+        public ValueTask LS_RemoveItem(string key) =>
+            LS.DeleteAsync(key);
+#endif
 
         public ValueTask<string> InitBrowserCapture(string title, bool start) =>
-            JSR.InvokeAsync<string>("IcuTest.UI.InitBrowserCapture", title, start);
+            mod.InvokeAsync<string>("UI.InitBrowserCapture", title, start);
         public ValueTask<string> GetPosition(string sel) =>
-            JSR.InvokeAsync<string>("IcuTest.UI.GetPosition", sel);
+            mod.InvokeAsync<string>("UI.GetPosition", sel);
+        public async ValueTask<RectangleF> GetClientRect(string sel)
+        {
+            var a = await mod.InvokeAsync<float[]>("UI.GetClientRect", sel);
+            return (new RectangleF(a[0], a[1], a[2], a[3]));
+        }
+
+        public ValueTask<string> IntAlign(string sel) =>
+            mod.InvokeAsync<string>("UI.IntAlign", sel);
 
         public ValueTask<bool> SyncScrollbars(ElementReference oldp, ElementReference newp) =>
-            JSR.InvokeAsync<bool>("IcuTest.UI.SyncScrollbars", oldp, newp);
+            mod.InvokeAsync<bool>("UI.SyncScrollbars", oldp, newp);
 
         public ValueTask PanZoomInit(string sel) =>
-            JSR.InvokeVoidAsync("IcuTest.UI.PanZoomInit", sel);
+            mod.InvokeVoidAsync("UI.PanZoomInit", sel);
 
         public ValueTask Click(ElemRef e) =>
-            JSR.InvokeVoidAsync("IcuTest.Act.Click", e.Key);
+            mod.InvokeVoidAsync("Act.Click", e.Key);
 
         public ValueTask SetValue(ElemRef e, string v) =>
             // Useful for setting component values that are private
-            JSR.InvokeVoidAsync("IcuTest.Act.SetValue", e.Key, v);
+            mod.InvokeVoidAsync("Act.SetValue", e.Key, v);
         public ValueTask DispatchEvent(ElemRef e, string eventType) =>
-            JSR.InvokeVoidAsync("IcuTest.Act.DispatchEvent", e.Key, eventType);
+            mod.InvokeVoidAsync("Act.DispatchEvent", e.Key, eventType);
+
         //public ValueTask SendKeys(ElemRef e, string v) =>
-        //    JSR.InvokeVoidAsync("IcuTest.Act.SendKeys", e.Key, v);
+        // This would be a serious security violation.
+        //    JSR.InvokeVoidAsync("Act.SendKeys", e.Key, v);
 
         public ValueTask Cleanup() =>
-            JSR.InvokeVoidAsync("IcuTest.Act.Cleanup");
-        public ValueTask<string> Content(ElemRef e, bool htmlFormat) =>
-            JSR.InvokeAsync<string>("IcuTest.Act.Content", e.Key, htmlFormat);
+            mod.InvokeVoidAsync("Act.Cleanup");
+        public ValueTask<string> GetContent(ElemRef e, bool htmlFormat) =>
+            mod.InvokeAsync<string>("Act.GetContent", e.Key, htmlFormat);
+        public ValueTask<string> SetContent(ElemRef e, string newContent) =>
+            mod.InvokeAsync<string>("Act.SetContent", e.Key, newContent);
         public ValueTask<int[]> FindAll(string sel) =>
-            JSR.InvokeAsync<int[]>("IcuTest.Act.FindAll", sel);
+            mod.InvokeAsync<int[]>("Act.FindAll", sel);
 
-        public async Task CheckIcuInstallation()
+        public async Task HealthCheck()
         {
-            try {
-                var res = await JSR.InvokeAsync<bool>("IcuTest.UI.IsInstalled", "");
-                ENV.Browser = await DetectBrowser();
-                DBG.Info($"Detected Browser = {ENV.Browser}");
-            } catch (Exception e) {
-                DBG.Err(e.Message); // may be actual script error
-                var (page, cw) = ENV.IsWasm ? ("index.html", "webassembly") : ("_Host.cshtml", "Server");
-                throw new BaseUtils.IcuException("Configuration Error",
-                   $"1) You must have these js scripts in {page}.\n"+
-                    "    <script src=\"_content/IcuBlazor/interop.js\"></script>\n"+
-                   $"    <script src=\"_framework/blazor.{cw}.js\"></script>\n"
-                    );
-            }
-        }
-
-        public async Task InitBrowserCapture(IcuSession ss)
-        {
-            try {
-                var title = ss.ID;
-                var prev = await InitBrowserCapture(title, true);
-                await Task.Delay(200);
-                var s = await IcuRpc.InitImageCapture(ss, title);
-                var _ = await InitBrowserCapture(prev, false);
-            } catch (JSException e) {
-                if (e.Message.StartsWith("Browser zoom")) {
-                    throw new BaseUtils.IcuException("Inconsistent zoom",
-                       $"1) {e.Message}\n"+
-                        "2) Also ensure that your monitor scale is 100%");
-                } else
-                    throw;
-            }
+            var check = DateTime.Now.Ticks.ToString();
+            var res = await mod.InvokeAsync<string>("UI.IsInstalled", check);
+            if (!res.Equals("icu-"+check))
+                throw new IcuException("Javascript interop failed.", "");
         }
 
     }
@@ -133,9 +126,13 @@ namespace IcuBlazor
         }
 
         public T Deserialize<T>(string json, T defValue)
+            where T : notnull
         {
             try {
-                return (JsonSerializer.Deserialize<T>(json));
+                if (String.IsNullOrEmpty(json))
+                    return defValue;
+                var r = JsonSerializer.Deserialize<T>(json);
+                return (r==null) ? defValue : r;
             } catch (Exception) {
                 var typ = defValue.GetType().Name;
                 DBG.Err($"Json Deserialize error: '{json}' is not a '{typ}'");
@@ -143,12 +140,10 @@ namespace IcuBlazor
             }
         }
         async Task<T> LS_GetItem<T>(string key, T defValue)
+            where T : notnull
         {
             var json = await JS.LS_GetItem(key);
-            if (String.IsNullOrEmpty(json))
-                return defValue;
-            else
-                return Deserialize<T>(json, defValue);
+            return Deserialize<T>(json, defValue);
         }
         async Task LS_SetItem(string key, object data)
         {
@@ -157,6 +152,7 @@ namespace IcuBlazor
         }
 
         public async Task<T> GetItem<T>(string key, T defValue)
+            where T : notnull
         {
             if (cache.ContainsKey(key)) {
                 return ((T)cache[key]);
@@ -166,12 +162,18 @@ namespace IcuBlazor
                 return data;
             }
         }
-        public async Task<bool> SetItem(string key, object data)
+        public async Task<bool> SetItem(string key, object? data)
         {
             if (cache.ContainsKey(key) && cache[key]==data) {
                 return false; // OPT: reduce LS sets
             } else {
-                await LS_SetItem(key, data);
+                if (data == null) {
+                    cache.Remove(key);
+                    await JS.LS_RemoveItem(key);
+                } else {
+                    cache[key] = data;
+                    await LS_SetItem(key, data);
+                }
                 return true;
             }
         }
@@ -191,4 +193,59 @@ namespace IcuBlazor
         }
 
     }
+
+    public class JSInit
+    {
+        internal readonly IJSRuntime JSR;
+        //public readonly IJSInProcessRuntime JSPR;     // zzz not officially supported
+        //public readonly IJSUnmarshalledRuntime JSUR;  // zzz not officially supported
+        //private readonly ProtectedLocalStorage LS;    // zzz doesn't work in browser!?!
+
+        internal JSInterop JSI;
+        internal LocalStorage LS;
+
+        private JSInit(IJSRuntime jsr, IJSObjectReference module) //, ProtectedLocalStorage ls, IJSInProcessRuntime jspr, IJSUnmarshalledRuntime jsur)
+        {
+            JSR = jsr;
+            JSI = new JSInterop(module, JSR);
+            LS = new LocalStorage(JSI);
+            //JSPR = jspr;
+            //JSUR = jsur;
+        }
+
+        static public async Task<JSInit> InitAsync(IJSRuntime jsr)
+        {
+            try {
+                var module = await jsr.InvokeAsync<IJSObjectReference>(
+                   "import", "/_content/IcuBlazor/interop.js");
+                var jsinit = new JSInit(jsr, module);
+                await jsinit.JSI.HealthCheck();
+                ENV.Browser = await jsinit.JSI.DetectBrowser();
+                return jsinit;
+            } catch (Exception e) {
+                DBG.Err(e.Message); // may be actual script error
+                throw;
+            }
+        }
+
+        public async Task InitBrowserCapture(IcuSession ss)
+        {
+            try {
+                var title = ss.ID;
+                var prev = await JSI.InitBrowserCapture(title, true);
+                await Task.Delay(200);
+                var s = await IcuRpc.InitImageCapture(ss, title);
+                var _ = await JSI.InitBrowserCapture(prev, false);
+            } catch (JSException e) {
+                if (e.Message.StartsWith("Browser zoom")) {
+                    throw new IcuException("Inconsistent zoom",
+                       $"1) {e.Message}\n"+
+                        "2) Also ensure that your monitor scale is 100%");
+                } else
+                    throw;
+            }
+        }
+
+    }
+
 }
