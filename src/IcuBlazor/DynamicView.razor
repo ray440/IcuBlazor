@@ -1,0 +1,25 @@
+﻿@page "/DynamicView"
+
+@DynamicFragment
+
+@code {
+
+    [Parameter] public object? Model { get; set; }
+    [Parameter] public string Suffix { get; set; } = "View";
+
+    private RenderFragment? DynamicFragment;
+
+    private RenderFragment CreateComponent(Type viewType) => builder => {
+        builder.OpenComponent(1, viewType);
+        builder.AddAttribute(2, "Model", Model);
+        builder.CloseComponent();
+    };
+
+    protected override void OnInitialized()
+    {
+        var v = BlazorUI.FindTypeWithSuffix(Model, Suffix, typeof(razor.Views.ObjectView));
+        DynamicFragment = CreateComponent(v);
+        base.OnInitialized();
+    }
+
+}

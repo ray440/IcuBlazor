@@ -1,0 +1,24 @@
+﻿@page "/FsCheckResultView"
+
+@code {
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
+    [CascadingParameter(Name = "CPview")] IcuCheckpoint CPview { get; set; } = null!; // non-null required
+    [Parameter] public FsCheckResult Model { get; set; } = null!; // non-null required
+
+    protected override void OnInitialized()
+    {
+        var acts = new List<(string,Action)>() {
+            ("Run Again", new Action(Model.Run))
+        };
+        CPview.SetToolbar(@<ButtonBar Actions=@acts Clicked="CPview.Update"/>);
+        base.OnInitialized();
+    }
+}
+@{
+    var e = Model.Error();
+    object? res = (e==null) ? null : e.Value;
+}
+
+@if (res != null) {
+    <DynamicView Model=@res/>
+}

@@ -1,0 +1,16 @@
+﻿@page "/InfoLogView"
+
+@code {
+    [Parameter] public InfoLog Model { get; set; } = null!; // required
+
+    bool showDbg = true;
+    void ToggleDebugLog()
+    {
+        showDbg = !showDbg;
+    }
+}
+@{
+    var dlog = showDbg ? Model.Log : "...";
+}
+
+<pre class="info" @ondblclick="ToggleDebugLog">@dlog</pre>

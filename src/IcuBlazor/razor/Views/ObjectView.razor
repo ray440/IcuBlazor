@@ -1,0 +1,13 @@
+﻿@page "/ObjectView"
+
+@code {
+    [Parameter] public object? Model { get; set; }
+    string output = "";
+    protected override Task OnInitializedAsync()
+    {
+        output = Conv.AsString(Model,2,0);
+        return base.OnInitializedAsync();
+    }
+}
+
+<pre class="object-view">@output</pre>
