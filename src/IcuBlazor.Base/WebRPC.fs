@@ -44,8 +44,9 @@ module RPC =
                 let! resp = webapi.GetAsync "Ping" |> Async.AwaitTask
                 let! body = resp.Content.ReadAsStringAsync() |> Async.AwaitTask
                 if not(body.StartsWith("Pong")) then
-                    let msg = SF "Can't access Web API at %A" APIhost
-                    let h = SF "1) Try webBuilder.UseUrls(%A)." APIhost 
+                    let msg = SF "Can't access server at %A" APIhost
+                    let h0 = "1) Try setting IcuConfig.EnableServer=false (e.g. for standalone CSBs)"
+                    let h = SF "%s\n2) Try builder.UseUrls(%A).\n" h0 APIhost 
                     return raise (IcuException(msg, h))
                     
                 isOnline <- (resp.StatusCode = HttpStatusCode.OK)
@@ -80,7 +81,8 @@ module RPC =
     type IProxy =
         abstract member Config : IcuConfig
         abstract member ReadTest: string -> Async<string>
-        abstract member SaveTest: DiffAssert -> Async<unit>
+        abstract member SaveFileTest: DiffFileAssert -> Async<unit>
+        abstract member SaveImageTest: DiffImageAssert -> Async<unit>
         abstract member RunServerTests: unit -> Async<string>
         abstract member InitBrowserCapture: string -> Async<string>
         abstract member CheckRect: string -> SnapshotArgs -> Async<int>
@@ -90,7 +92,8 @@ module RPC =
         interface IProxy with
             member val Config = config
             member __.ReadTest tname = err()
-            member __.SaveTest diff = err()
+            member __.SaveFileTest diff = err()
+            member __.SaveImageTest diff = err()
             member __.RunServerTests() = err()
             member __.InitBrowserCapture(title) = err()
             member __.CheckRect _sid args = err()
@@ -117,8 +120,10 @@ module RPC =
             member val Config = config
             member __.ReadTest tname = 
                 fetch (SF "ReadTest?sid=%s&tname=%s" sid tname)
-            member __.SaveTest diff =
-                post (SF "SaveTest?sid=%s" sid) diff |> Async.Ignore
+            member __.SaveFileTest diff =
+                post (SF "SaveFileTest?sid=%s" sid) diff |> Async.Ignore
+            member __.SaveImageTest diff =
+                post (SF "SaveImageTest?sid=%s" sid) diff |> Async.Ignore
             member __.RunServerTests() = 
                 fetch (SF "RunServerTests?sid=%s" sid)
             member __.InitBrowserCapture(title) = async {

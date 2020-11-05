@@ -6,7 +6,6 @@ open IcuBlazor
 open IcuBlazor.Models
 
 module WWWRoot =
-    open System.Linq
     open Microsoft.Extensions.FileProviders
     open Microsoft.AspNetCore.Hosting
 
@@ -18,22 +17,24 @@ module WWWRoot =
             let path = fi.PhysicalPath
             let wwwroot,_ = path |> Str.SplitAt (path.LastIndexOf(file))
             ENV.wwwroot <- wwwroot
-            DBG.Info(SF "IcuBlazor wwwroot: %A" wwwroot)
+            //DBG.Info(SF "IcuBlazor wwwroot: %A" wwwroot)
+            DBG.Info($"IcuBlazor wwwroot: %A{wwwroot}")
 
     let FromFile (env:IWebHostEnvironment) file =
         let fi = env.WebRootFileProvider.GetFileInfo file
         extract_root fi file
 
     let FromDir (env:IWebHostEnvironment) (testdir) =
-        let contents = env.WebRootFileProvider.GetDirectoryContents(testdir)
-        if not contents.Exists then
-            failwithf "Cannot find TestDir='wwwroot/%s'.  It must be created manually." testdir
-        extract_root (contents.First()) testdir
+        let cs = env.WebRootFileProvider.GetDirectoryContents("")
+        let fo = cs |> Seq.tryFind(fun f -> f.IsDirectory && f.Name.Equals(testdir))
+        match fo with
+        | Some fi -> extract_root fi testdir
+        | _ -> () // delay error msg until browser is ready (see ServerRpc.Handler.dir)
 
     let FromConfig (env:IWebHostEnvironment) (config:IcuConfig) =
-        if (String.IsNullOrWhiteSpace(ENV.wwwroot)) then
-            FromFile env "index.html"
-            if (String.IsNullOrWhiteSpace(ENV.wwwroot)) then
+        if (Str.isEmpty ENV.wwwroot) then
+            FromFile env "index.html" // by default place `icu_data/` where index.html is found
+            if (Str.isEmpty ENV.wwwroot) then
                 FromDir env config.TestDir
 
 
@@ -41,7 +42,10 @@ module ServerRpc =
 
     type Handler(config:IcuConfig) =
         let dir = 
+            if Str.isEmpty ENV.wwwroot then
+                failwithf "Cannot find TestDir='wwwroot/%s'.  It must be created manually." config.TestDir
             let d = Path.Combine(ENV.wwwroot, config.TestDir)
+            DBG.Info(" ----")
             DBG.Info(SF "Test data dir = %A" d)
             if not(Directory.Exists(d)) then
                 Directory.CreateDirectory(d) |> ignore
@@ -64,13 +68,13 @@ module ServerRpc =
                 return handleFileException e
         }
 
-        let saveLogTest (diff:DiffAssert) = async {
+        let saveLogTest (diff:DiffFileAssert) = async {
             IcuIO.EnsureDirExists dir diff.Name
             let f = IcuIO.TestToFile dir diff.Name
             return! File.WriteAllTextAsync(f, diff.Result) |> Async.AwaitTask
         }
 
-        let saveImageTest (diff:DiffAssert) = async {
+        let saveImageTest (diff:DiffImageAssert) = async {
             GC.Collect()
             let tname = diff.Name
             IcuIO.EnsureDirExists dir tname
@@ -78,11 +82,6 @@ module ServerRpc =
             let new_fname = IcuIO.NewImageFile  dir tname
             File.Copy(new_fname, cur_fname, true)
         }
-
-        let saveTest (diff:DiffAssert) =
-            if diff.IsImgTest 
-            then saveImageTest diff
-            else saveLogTest diff
 
         let check_rect sid (args:SnapshotArgs) = async {         
             IcuIO.EnsureDirExists dir args.Name
@@ -106,7 +105,8 @@ module ServerRpc =
         interface RPC.IProxy with
             member val Config = config
             member __.ReadTest tname = readTest tname
-            member __.SaveTest diff = saveTest diff
+            member __.SaveFileTest diff = saveLogTest diff
+            member __.SaveImageTest diff = saveImageTest diff
             member __.InitBrowserCapture(sid) = WinCapture.InitSession(sid)
             member __.CheckRect sid args = check_rect sid args
             member __.RunServerTests() = runServerTests()

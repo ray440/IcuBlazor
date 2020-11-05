@@ -15,7 +15,7 @@ type IcuTestController(env:IWebHostEnvironment) =
 
     [<HttpGet("[action]")>]
     member __.Ping() = // @ https://localhost:44322/api/IcuTest/Ping
-        if (String.IsNullOrWhiteSpace(ENV.wwwroot)) then
+        if (Str.isEmpty ENV.wwwroot) then
             WWWRoot.FromFile env "index.html"
 
         let t = DateTime.Now.ToString("hh:mm:ss ")
@@ -35,8 +35,12 @@ type IcuTestController(env:IWebHostEnvironment) =
         IcuRpc.ReadTest (sess sid) tname
     
     [<HttpPost("[action]")>]
-    member __.SaveTest(sid, [<FromBody>] dres:Models.DiffAssert) =
-        IcuRpc.SaveTest (sess sid) dres
+    member __.SaveFileTest(sid, [<FromBody>] dres:Models.DiffFileAssert) =
+        IcuRpc.SaveFileTest (sess sid) dres
+    
+    [<HttpPost("[action]")>]
+    member __.SaveImageTest(sid, [<FromBody>] dres:Models.DiffImageAssert) =
+        IcuRpc.SaveImageTest (sess sid) dres
     
     [<HttpGet("[action]")>]
     member __.RunServerTests(sid) =
