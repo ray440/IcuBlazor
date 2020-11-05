@@ -1,33 +1,37 @@
 ﻿@page "/OutcomeIcon"
 
 @code {
-    [Parameter] public OutcomeType Outcome { get; set; } = OutcomeType.Unknown;
+    [Parameter] public Outcome Outcome { get; set; } = Outcome.Unknown;
 
-    static public (string State, string Icon) OutcomeStat(OutcomeType oc) {
+    static public (string State, string Icon) OutcomeStat(Outcome oc) {
         var state = "unknown";
         var icon = "";
-        switch (oc.Tag) {
-        case OutcomeType.Tags.Pass:
+        switch (oc) {
+        case Outcome.Pass:
             state = "pass";
             icon = "oi-circle-check";
             break;
-        case OutcomeType.Tags.Fail:
+        case Outcome.Fail:
             state = "fail";
             icon = "oi-circle-x";
             break;
-        case OutcomeType.Tags.Skip:
+        case Outcome.Skip:
             state = "skip";
             icon = "oi-warning";
             break;
-        case OutcomeType.Tags.Running:
+        case Outcome.Running:
             state = "plain";
             icon = "oi-loop-circular";
             break;
-        case OutcomeType.Tags.Unknown:
+        case Outcome.Logging:
+            state = "plain";
+            icon = "";
+            break;
+        case Outcome.Unknown:
             state = "plain";
             icon = "oi-contrast";
             break;
-        case OutcomeType.Tags.New:
+        case Outcome.New:
             state = "skip";
             icon = "oi-sun";
             break;
@@ -39,24 +43,6 @@
 @{
     var si = OutcomeStat(Outcome);
 }
-<Styled>
-.icu .x-icon {
-    width: 1.5em;
-    text-align: center;
-}
-.icu .fg-plain {
-    color: [--plain];
-}
-.icu .fg-pass {
-    color: [--pass-dark];
-}
-.icu .fg-fail {
-    color: [--fail-dark];
-}
-.icu .fg-skip {
-    color: [--skip-dark];
-}
-</Styled>
 
 @* -- zzz this entire component should be cached by OutCome -- *@
 <div class="oi @si.Icon x-icon fg-@si.State"> </div>

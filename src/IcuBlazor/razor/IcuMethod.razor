@@ -1,8 +1,8 @@
 ﻿@page "/IcuMethod"
 
 @code {
-    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
-    [Parameter] public TestMethod Method { get; set; }
+    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; } = null!; // non-null required
+    [Parameter] public TestMethod Method { get; set; } = null!; // non-null required
 
     protected override void OnInitialized() {
         Method.OnChange.DoAction((msg) => {
@@ -19,7 +19,7 @@
 @{
     var M = Method;
     var checks = M.Kids.Copy(); // could be modified while rendering
-    int NPass = checks.Count(tr => tr.Outcome == OutcomeType.Pass);
+    int NPass = checks.Count(tr => tr.Outcome == Outcome.Pass);
     int NTests = checks.Length;
     int NFail = NTests - NPass;
 
@@ -27,24 +27,19 @@
     var hasDetail = (ICU.Config.ViewLayout != ViewLayout.TreeDetail) && (NTests > 0);
 }
 
-<Styled>
-.icu .test-method {
-    background: @XSS.darker(0.02);
-    margin-bottom: 0.2em;
-}
-</Styled>
-
 <div class="test-method fillw" @onclick="Clicked">
     <Folder Tree="@M" HasDetail="@hasDetail">
         <HeaderTitle>
-            <OutcomeIcon Outcome="@M.Outcome" />
-            <div class="flex-grow">&nbsp; @M.Name</div>
-            @*<div class="flex-grow">@M.Name (@NPass/@NTests)</div>*@
-            <div> @(rt < 1 ? "< 1" : $"{rt}") ms</div>
+            <GridLayout Cols="auto 1fr auto" class="fillw">
+                <OutcomeIcon Outcome="@M.Outcome" />
+                <div>@M.Name</div>
+                @*<div class="flex-grow">@M.Name (@NPass/@NTests)</div>*@
+                <div> @(rt < 1 ? "< 1" : $"{rt}")ms</div>
+            </GridLayout>
         </HeaderTitle>
         <Detail>
             @foreach (var c in checks) {
-                <IcuCheckpoint Check="@c" />
+                <IcuCheckpoint Check="@c"/>
             }
         </Detail>
     </Folder>
