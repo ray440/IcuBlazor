@@ -5,7 +5,7 @@
 
 @code {
     [Parameter] public bool Old { get; set; }
-    [Parameter] public DiffText Parent { get; set; }
+    [Parameter] public DiffText Parent { get; set; } = null!; // required
     public ElementReference panel;
 
     ChangeType prev = ChangeType.Imaginary;
@@ -27,27 +27,7 @@
         : (dm.NewText, "new-pane");
 }
 
-<Styled>
-.icu .diff-pane {
-    height: auto;
-    max-height: 30em;
-    padding: 0.25em;
-    background: #fff;
-}
-.icu .old-pane {  @*  vertical scrollbar tied to new-pane  *@
-    overflow: auto hidden;
-}
-.icu .new-pane {
-    overflow: auto auto;
-}
-.icu .diff-pane .lineNumber {
-    color: #aaa;
-    background-color: #fff;
-    text-align: right;
-}
-</Styled>
-
-<div @ref="panel" class="diff-pane @pane" tabindex="0">
+<div @ref="panel" class="@pane" tabindex="0">
     @foreach (var ln in text.Lines) {
         var show = displayLine(ln.Type);
         if (show == 1) {

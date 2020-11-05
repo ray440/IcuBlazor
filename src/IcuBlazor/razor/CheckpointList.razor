@@ -1,7 +1,7 @@
 ﻿@page "/CheckpointList"
 
 @code {
-    [Parameter] public List<Checkpoint> Checks { get; set; }
+    [Parameter] public List<Checkpoint>? Checks { get; set; }
 
     public void SetChecks(List<Checkpoint> cps) {
         Checks = cps;

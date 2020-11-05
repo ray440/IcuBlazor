@@ -1,8 +1,8 @@
 ﻿@page "/IcuSuite"
 
 @code {
-    [Parameter] public TestSuite Suite { get; set; }
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [Parameter] public TestSuite Suite { get; set; } = null!; // non-null required
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
 }
 
 @{
@@ -22,10 +22,10 @@
         </HeaderTitle>
         <Detail>
             @foreach (var m in methods) {
-                <IcuMethod Method="@m" />
+                <IcuMethod Method="@m" @key=@m.ID/>
             }
             @foreach (var k in kids) {
-                <IcuSuite Suite="@k" />
+                <IcuSuite Suite="@k" @key=@k.ID/>
             }
         </Detail>
     </Folder>

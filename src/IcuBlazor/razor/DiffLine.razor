@@ -3,7 +3,7 @@
 @using DiffPlex.DiffBuilder.Model
 
 @code {
-    [Parameter] public DiffPiece Model { get; set; }
+    [Parameter] public DiffPiece Model { get; set; } = null!; // required
     [Parameter] public bool Old { get; set; } = false;
     [Parameter] public bool LineNums { get; set; } = false;
 
@@ -35,47 +35,8 @@
     }
 }
 
-<Styled>
-.line {
-    white-space: nowrap;
-    width: 100%;
-}
-
-.piece {
-    display: inline-block;
-    box-sizing: border-box;
-    white-space: pre;
-}
-
-.pieceHolder {
-    display: flex;
-    flex-flow: row nowrap;
-}
-
-.tear {
-    height: 0.5em;
-    width: 100%;
-    border-bottom: 0.1em #ddd dashed;
-}
-
-
-.CharInserted  { background-color: #afa; }
-.CharDeleted   { background-color: #faa; }
-.CharUnchanged {}
-.CharImaginary {}
-
-.LineModified  { background-color: #efe; }
-.LineInserted  { background-color: #efe; }
-.LineDeleted   { background-color: #fee; }
-.LineUnchanged { background-color: #fff; }
-.LineImaginary {
-    background-image: linear-gradient(-45deg, #888 5%, transparent 5%, transparent 50%, #888 50%, #888 55%, transparent 55%, transparent 95% );
-    background-size: 0.5em 0.5em;
-}
-</Styled>
-
 @{
-var mType = Model.Type;
+    var mType = Model.Type;
 }
 
 <div class="@lineStyle(mType)">
@@ -83,14 +44,14 @@ var mType = Model.Type;
         <span class="lineNumber piece">@Model.Position: </span>
     }
     @if (mType == ChangeType.Modified) {
-        foreach (var ch in @Model.SubPieces) {
+        foreach (var ch in Model.SubPieces) {
             var cType = ch.Type;
             if (cType != ChangeType.Imaginary && ch.Text.Length > 0) {
                 <span class=@charStyle(cType)>@ch.Text</span>
             }
         }
     } else {
-        <span class=@charStyle(mType)>@Model.Text </span>
+        <span class=@charStyle(mType)>@Model.Text&nbsp;</span>
     }
 </div>
 

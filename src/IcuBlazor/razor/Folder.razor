@@ -4,16 +4,17 @@
 
 @code {
 
-    [Parameter] public Tree.Base Tree { get; set; }
-    [Parameter] public RenderFragment Header { get; set; }
-    [Parameter] public RenderFragment HeaderTitle { get; set; }
-    [Parameter] public RenderFragment Detail { get; set; }
+    [Parameter] public Tree.Base Tree { get; set; } = null!; // required
+    [Parameter] public RenderFragment? Header { get; set; }
+    [Parameter] public RenderFragment? HeaderTitle { get; set; }
+    [Parameter] public RenderFragment? Detail { get; set; }
     [Parameter] public bool StayOpen { get; set; } = false; // for verifying
     [Parameter] public bool ShowHeader { get; set; } = true;
     [Parameter] public bool HasDetail { get; set; } = true;
     [Parameter] public bool Indented { get; set; } = true;
 
-    string okey = null; // save folder's open state to LocalStorage
+    // save folder's open state to LocalStorage
+    string okey = null!; // set in OnInitializedAsync()
     void makeOpenKey() { okey = SlashPath.Make(Tree.Path, "Open"); }
     async Task ReadOpenKey() { Tree.Open = await UI.LS.GetItem<bool>(okey, true); }
     void SaveOpenKey() { _ = UI.LS.SetItem(okey, Tree.Open); }  // fire & forget
@@ -31,7 +32,6 @@
             base.InvokeAsync(StateHasChanged);
         });
     }
-
 }
 
 @{
@@ -42,24 +42,6 @@
     var indent = (Indented && ShowHeader) ? "indent" : "";
     var showDetail = HasDetail && open;
 }
-
-<Styled>
-.indent {
-    margin-left: 1.5em;
-}
-.open-icon {
-    width: 1.5em;
-    color: #aaa;
-    text-align: center;
-}
-.open-icon:hover {
-    color: black;
-}
-.hdr-title {
-    padding: 0em 0.5em 0em 0em;
-    align-items: center;
-}
-</Styled>
 
 @*
 Note: This layout doesn't wrap Folders in a div container (e.g. grid-layout).
@@ -73,15 +55,21 @@ Note: This layout doesn't wrap Folders in a div container (e.g. grid-layout).
     if (Header != null) {
         @Header
     } else if (HeaderTitle != null) {
-        <div class="flexrow fillw hdr-title" @onclick="ToggleDetail">
-            <div class="oi @iconOpen open-icon"></div>
+        <div class="hdr-title">
+            <div class="oi @iconOpen open-icon" @onclick="ToggleDetail"></div>
             @HeaderTitle
         </div>
     }
 }
 
+@*<OpenCloseAnim Show=@showDetail>
+    <div class="indent">
+        @Detail
+    </div>
+</OpenCloseAnim>*@
+
 @if (showDetail) {
-    <div class="@indent">
+    <div class="indent">
         @Detail
     </div>
 }

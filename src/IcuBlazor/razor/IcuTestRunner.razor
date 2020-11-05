@@ -1,37 +1,20 @@
 ﻿@page "/IcuTestRunner"
 
-@inject IStyled Styled
+@using IcuBlazor.razor.Views
 
 @code {
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
-    [Parameter] public int Width { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
+    [Parameter] public int Width { get; set; } = 1000;
 
     string wstyle = "";
     List<IcuTestSuite> Suites = new List<IcuTestSuite>();
-    IcuToolbar bar;
-    ViewerLayout vlayout;
+    IcuToolbar? bar;
+    ViewerLayout? vlayout;
 
     public void Update()
     {
         if (vlayout != null) vlayout.Update();
         StateHasChanged();
-    }
-
-    internal void SetTheme() {
-        Styled.SetThemeValue("--font",
-            "Verdana, Tahoma, Geneva, sans-serif");
-        Styled.SetThemeValue("--font-fixed",
-            "'Lucida Console', Monaco, monospace");
-        Styled.SetThemeValue("--accent",      "#66f");
-        Styled.SetThemeValue("--pass-light",  "#efe");
-        Styled.SetThemeValue("--pass-dark",   "#2b2");
-        Styled.SetThemeValue("--fail-light",  "#fee");
-        Styled.SetThemeValue("--fail-dark",   "#b22");
-        Styled.SetThemeValue("--skip-light",  "#ffe");
-        Styled.SetThemeValue("--skip-dark",   "#bb2");
-        Styled.SetThemeValue("--plain",       "#888");
-        Styled.SetThemeValue("--plain-light", "#ddd");
-        Styled.SetThemeValue("--plain-dark",  "#222");
     }
 
     internal void AddTestMethods() {
@@ -50,7 +33,7 @@
         foreach (var sut in Suites) {
             DBG.Info("\n");
             var title = sut.GetType().Name;
-            await sut.ExecuteTests(sut == last).Log(title);
+            await sut.ExecuteTests(sut == last).Wrap(title);
 
             var now = DateTime.Now.Ticks;
             T += (now - t0)/10000;
@@ -87,10 +70,6 @@
     //    }
     //}
 
-    protected override void OnInitialized() {
-        SetTheme();
-    }
-
     public void Run(List<IcuTestSuite> suites) {
         Suites = suites;
         AddTestMethods();
@@ -101,48 +80,14 @@
 @{
     wstyle = $"width:{Width}px";
 }
-<Styled>
-.icu .fillw {
-    width: 100%;
-}
-.icu .dbg {
-    border: 1px dashed red;
-}
-.icu .muted-text {
-    color: rgba(0, 0, 0, 0.5);
-}
-.icu .flexrow {
-    display: flex;
-    flex-flow: row nowrap;
-}
-.icu .flex-grow {
-    flex: 1 1 0;
-}
 
-.icu .icu-viewer {
-    font-family: [--font];
-    @*width: @XSS.pixels(@Width);*@
-    @*background:#eee;*@
-}
-.icu .fixed-font {
-    font-family: [--font-fixed];
-}
-
-</Styled>
-
-
-<div class="icu-viewer" style="@wstyle">
+<div style="@wstyle">
     <IcuToolbar @ref="bar" OnUpdate="((x)=>Update())"/>
     @if (bar != null) {
-        @if (!String.IsNullOrWhiteSpace(bar.error)) {
-            <ExceptionBox Msg="@bar.error" />
+        @if (bar.error != null) {
+            <ExceptionView Model="@bar.error" />
             <br/>
         }
-        @if (bar.showSettings) {
-            <IcuSettings OnSubmit="bar.ToggleShowSettings"/>
-            <br/>
-        } else {
-            <ViewerLayout @ref="vlayout"/>
-        }
+        <ViewerLayout @ref="vlayout"/>
     }
 </div>

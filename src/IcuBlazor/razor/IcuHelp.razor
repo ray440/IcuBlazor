@@ -3,8 +3,8 @@
 @using IcuBlazor
 
 @code {
-    [Parameter] public string Topic { get; set; }
-    [Parameter] public Exception ex { get; set; }
+    [Parameter] public string Topic { get; set; } = null!; // required
+    [Parameter] public Exception? ex { get; set; }
 }
 @{
     void SeeAlso(string tag, string name) {
@@ -13,30 +13,13 @@
         }
     }
 
-    var eh = ex as BaseUtils.IcuHelpException;
+    var eh = ex as IcuHelpException;
     if (String.IsNullOrEmpty(Topic) && eh != null) {
         Topic = eh.Tag;
     }
     var title = Str.TitleCase(Topic);
     var tag = Topic.ToLower();
 }
-
-<Styled>
-.icu .help {
-    font-family: 'Lucida Console', Monaco, monospace;
-    font-size: 80%;
-    background:#fee;
-    padding:0.5em;
-    border:.1em solid red;
-}
-.help .also {
-    padding: 0.3em;
-    background: @XSS.darker(0.05);
-}
-.help .also:hover {
-    background: @XSS.darker(0.3);
-}
-</Styled>
 
 <div class="help">
 <h3>@title</h3>
@@ -66,7 +49,9 @@ case "config":
         //root = c.WWWroot;
         td = c.TestDir;
     }
-    <p> @ex.Message </p>
+    if (ex != null) {
+        <p> @ex.Message </p>
+    }
     <ol>
         @*<li>WWWroot(="@root") must be a full path (e.g. c:\dir-path...\wwwroot\)</li>*@
         <li>TestDir(="@td") must be below WWWroot</li>

@@ -3,21 +3,22 @@
 @using static IcuBlazor.BaseUtils
 
 @code {
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
 
-    CheckpointList detailChecks;
+    CheckpointList? detailChecks;
 
-    static OutcomeType[] order = { 
-        OutcomeType.Fail, 
-        OutcomeType.New, OutcomeType.Skip, 
-        OutcomeType.Pass, OutcomeType.Unknown};
+    static Outcome[] order = { 
+        Outcome.Fail, 
+        Outcome.New, Outcome.Skip, 
+        Outcome.Pass, Outcome.Unknown};
 
     void HandleEvent(IcuEvent e)
     {
         switch (e) {
         case IcuEvent.Selected etm: // user clicked TestMethod
             if (ICU.Config.ViewLayout == ViewLayout.TreeDetail) {
-                detailChecks.SetChecks(etm.Item.Kids.List());
+                if (detailChecks != null)
+                    detailChecks.SetChecks(etm.Item.Kids.List());
             }
             break;
         }

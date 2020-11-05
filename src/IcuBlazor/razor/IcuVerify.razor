@@ -2,9 +2,9 @@
 
 @code {
 
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
 
-    Checkpoint check = null;
+    Checkpoint? check = null;
 
     void HandleEvent(IcuEvent e) {
         switch (e) {

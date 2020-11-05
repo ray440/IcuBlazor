@@ -1,14 +1,13 @@
 ﻿@page "/IndentLog"
 
 @code {
-    [Parameter] public string msg { get; set; }
-    [Parameter] public string xmsg { get; set; }
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public string? msg { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
 }
 
 @if (String.IsNullOrWhiteSpace(msg)) {
     @ChildContent
-} else {
+} else { // zzz doesn't really work... ChildContent is precalced??
     DBG.Indent(3, msg + " {");
     @ChildContent
     DBG.Indent(-3, "}");

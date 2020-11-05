@@ -1,40 +1,47 @@
 ﻿@page "/IcuTestDiv"
 
 @code {
-    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
-    [Parameter] public IcuTestSuite Suite { get; set; }
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; } = null!; // non-null required
+    [Parameter] public IcuTestSuite? Suite { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public int Width { get; set; } = 0;
-    [Parameter(CaptureUnmatchedValues = true)]
-    public IDictionary<string, object> AdditionalAttributes { get; set; }
-    IDictionary<string, object> attrs { get; set; }
 
-    void AugmentStyle() {
-        attrs = BaseUtils.CopyDict<string, object>(AdditionalAttributes);
-        var n = "style";
-        var v = attrs.ContainsKey(n) ? attrs[n] : "";
-        attrs[n] = $"{v};width:{Width}px;";
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object>? Attributes { get; set; }
+    IDictionary<string, object>? attrs { get; set; }
+
+    bool aligned = false;
+    static public string DivID = "icu-test-div";
+    static public string DivSelector = $"#{DivID}";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender && !aligned) {
+            await ICU.UI.JS.IntAlign(DivSelector);
+            aligned = true;
+        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     protected override void OnInitialized() {
-        AugmentStyle();
+        attrs = BlazorUI.AddAttrs(Attributes, "", $"width:{Width}px;");
         base.OnInitialized();
     }
 
 }
 
 @if (Suite == null) {
-    var e = new BaseUtils.IcuException(
+    var e = new IcuException(
         "IcuTestDiv.Suite is undefined",
         "1) Typically use <IcuTestDiv Suite=\"@this\" Width=\"300\" ...>");
     ICU.MsgBus.Notify(IcuEvent.NewError(e));
 } else if (Width <= 0) {
-    var e = new BaseUtils.IcuException(
+    var e = new IcuException(
         "IcuTestDiv.Width is not set",
         "1) Typically use <IcuTestDiv Suite=\"@this\" Width=\"300\" ...>");
     ICU.MsgBus.Notify(IcuEvent.NewError(e));
 } else if (Suite.Running) {
-    <div id="icu-test-div" @attributes="attrs">
+    <div id=@DivID @attributes="attrs">
         @ChildContent
     </div>
     <br />

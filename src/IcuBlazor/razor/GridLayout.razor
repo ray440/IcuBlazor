@@ -1,41 +1,21 @@
 ﻿@page "/GridLayout"
 
 @code {
-    [Parameter] public string Cols { get; set; }
-    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public string Cols { get; set; } = "repeat(4, auto)";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter(CaptureUnmatchedValues = true)]
-    public IDictionary<string, object> AdditionalAttributes { get; set; }
-    IDictionary<string, object> attrs { get; set; }
-
-    void AugmentClassWith(string extraClass) {
-        var n = "class";
-        attrs = BaseUtils.CopyDict<string, object>(AdditionalAttributes);
-        var v = attrs.ContainsKey(n) ? attrs[n] : "";
-        attrs[n] = $"{extraClass} {v}";
-    }
+    public IDictionary<string, object>? Attributes { get; set; }
+    IDictionary<string, object>? attrs { get; set; }
 
     protected override void OnInitialized() {
-        AugmentClassWith("grid-layout");
+        attrs = BlazorUI.AddAttrs(Attributes, 
+                    "grid-layout", 
+                    $"grid-template-columns: {Cols}");
         base.OnInitialized();
     }
 
 }
 
-<Styled>
-.icu .grid-layout {
-    display: grid;
-    grid-template-columns: repeat(4, auto);
-    grid-template-rows: auto;
-    grid-gap: 0.4em 0.4em;
-    padding: 0.4em;
-}
-
-@* -- use to highlight children --  *@
-@*.grid-layout > * {
-    border: 1px dashed red;
-}*@
-</Styled>
-
-<div @attributes="attrs" style="grid-template-columns: @Cols">
+<div @attributes="attrs">  @*style="grid-template-columns: @Cols">*@
     @ChildContent
 </div>

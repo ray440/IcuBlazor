@@ -5,9 +5,9 @@
 
 @code {
 
-    [CascadingParameter(Name = "ICUViewer")] IcuTestViewer Parent { get; set; }
-    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; }
-    IcuSession ss;
+    [CascadingParameter(Name = "ICUViewer")] IcuTestViewer? Parent { get; set; }
+    [CascadingParameter(Name = "ICU")] internal IcuClient ICU { get; set; } = null!; // non-null required
+    IcuSession ss = null!; // set OnInitialized()
 
     public string SuiteName = "";
     public bool Running = false;
@@ -34,7 +34,7 @@
     public async Task ExecuteTests(bool keepAlive) {
         this.OnSuiteStart();
         Running = true;
-        await Proc.AsTask(ss.RunTests(this));        
+        await Proc.AsTask(ss.RunTests(this));
         this.OnSuiteEnd();
         Running = keepAlive;
         await Update();
@@ -43,7 +43,7 @@
     protected override void OnInitialized() {
         if (Parent == null) {
             var tag = this.GetType().Name;
-            throw new BaseUtils.IcuException($"Misplaced <{tag}/>",
+            throw new IcuException($"Misplaced <{tag}/>",
                 $"IcuTestSuite must be place within an IcuTestViewer.\n"+
                 $"  <IcuTestViewer>\n     <{tag}/>\n  <IcuTestViewer/>\n\n");
         }
@@ -88,7 +88,7 @@
 
     // --- Rendering & synchronization ----------
 
-    TaskCompletionSource<bool> tcs;
+    TaskCompletionSource<bool>? tcs;
     /// <summary>
     /// Call StateHasChanged()
     /// </summary>
@@ -129,13 +129,17 @@
     /// <param name="check"></param>
     /// <param name="testName">Use to make file name, {testName}.png. Can have a path. (e.g. "init" or "docs/fig23")</param>
     /// <param name="selector">css selector of div (e.g. "#divID", ".class", "#example .section")</param>
-    public async Task CompareDiv(Checker check, string testName, string selector = "#icu-test-div") {
+    public async Task CompareDiv(Checker check, string testName, 
+        string selector = "") {
         await RenderNow();
         await Task.Delay(10);
 
         var name = SuiteName + "\\" + testName;
+        if (Str.isEmpty(selector))
+            selector = IcuTestDiv.DivSelector;
+
         var json_rect = await UI.JS.GetPosition(selector);
         var args = SnapshotArgs.FromJson(name, json_rect);
-        var _ = await check.Snapshot(args);
+        await check.Snapshot(args);
     }
 }
