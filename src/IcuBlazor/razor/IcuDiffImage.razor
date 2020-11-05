@@ -3,21 +3,29 @@
 @inject UIHelper UI
 
 @code {
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
-    [Parameter] public Checkpoint Check { get; set; }
-    Popup help;
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
+    [CascadingParameter(Name = "CPview")] IcuCheckpoint CPview { get; set; } = null!; // non-null required
+    [Parameter] public Checkpoint Check { get; set; } = null!; // non-null required
 
     string currUrl = "", newUrl = "", diffUrl = "";
     string shownUrl = "";
     string pixelate = "";
     string browser_pix = "";
     string pzid = BaseUtils.PrefixedID("pzid-");
+    DiffImageAssert diff = null!; // ok init
 
-    string status = "Snapshots are not equal.";
+    DiffImageAssert getDiff()
+    {
+        var d = Check.model as DiffImageAssert;
+        if (d == null) throw (new Exception("Invalid DiffImageAssert"));
+        return d;
+    }
+
+    string status = "";
     async Task ShowStatus(string msg, int wait)
     {
         status = msg;
-        StateHasChanged();
+        CPview.Update(); //StateHasChanged();
         await Task.Delay(500);
     }
 
@@ -30,12 +38,11 @@
     void HoverDiff() => ShowImage(diffUrl);
 
     async Task VerifyTest(bool save) {
-        var diff = Check.DiffAssert;
         try {
             if (save) {
                 await ShowStatus("Saving...", 10);
-                await IcuRpc.SaveTest(ICU.Session, diff);
-                status = "";
+                await IcuRpc.SaveImageTest(ICU.Session, diff);
+                status = "Saved";
             }
             Check.SetSaveSkip(save);
             Check.Verify().Value = false; // continue processing other tests
@@ -65,7 +72,7 @@
         case "3": HoverDiff(); break;
         case "p":
             // should do this automatically if scale > 2
-            pixelate = (pixelate.Length==0) ? "pixelate" : "";
+            pixelate = (pixelate.Length==0) ? browser_pix : "";
             break;
         default:
             break;
@@ -75,8 +82,8 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender) {
             await UI.JS.PanZoomInit("#"+pzid);
-            browser_pix = (ENV.Browser.Equals("Chrome"))
-                          ? "pixelated" : "crisp-edges";
+            var pix = (ENV.Browser.Equals("Chrome")) ? "pix" : "crisp";
+            browser_pix = $"pixelate-{pix}";
         }
         await base.OnAfterRenderAsync(firstRender);
     }
@@ -84,125 +91,67 @@
     string timestamp = "?"+(DateTime.Now.Ticks);
     string UnCached (string url) => (url + timestamp);
 
+    RenderFragment toolbar()
+    {
+        var pass = (Check.Outcome == Outcome.Pass);
+        var isNew = (Check.Outcome == Outcome.New);
+        var dir = ICU.Config.TestDir;
+        var tname = diff.Name;
+        var ncols = 6;
+
+        newUrl  = UnCached(IcuIO.NewImageFile(dir, tname));
+        if (pass) {
+            shownUrl = newUrl;
+            ncols = 1;
+        } else if (String.IsNullOrEmpty(shownUrl)) {
+            currUrl = UnCached(IcuIO.CurrImageFile(dir, tname));
+            diffUrl = UnCached(IcuIO.DiffImageFile(dir, tname));
+            shownUrl = newUrl;
+        }
+        var cols = $"1fr repeat({ncols}, auto)";
+
+        return (
+@<GridLayout Cols="@cols" class="toolbar">
+    <span> @status </span>
+    @if (!pass) {
+        <Btn class="hover-brighter hover-lined" @onmouseover=HoverNew>New</Btn>
+        if (isNew) {
+            <span />
+            <span />
+        } else {
+            <Btn class="hover-brighter hover-lined" @onmouseover=HoverCurr>Old</Btn>
+            <Btn class="hover-brighter hover-lined" @onmouseover=HoverDiff>Diff</Btn>
+        }
+        if (Check.Verify().Value) {
+            <Btn class="box-skip hover-brighter" @onclick=SkipTest>Skip Image</Btn>
+        } else {
+            <span />
+        }
+        <Btn class="box-pass hover-brighter" @onclick=SaveTest>Save Image</Btn>
+    }
+    <DropDown OpenOnHover="false">
+        <LabelContent>
+            <div class="hover-brighter hover-lighter40">?</div>
+        </LabelContent>
+        <DropContent>
+            <PopupHelp name="Image"/>
+        </DropContent>
+    </DropDown>
+</GridLayout>
+        );
+    }
 }
 @{
-    var pass = (Check.Outcome == OutcomeType.Pass);
-    var isNew = (Check.Outcome == OutcomeType.New);
-    var dir = ICU.Config.TestDir;
-    var tname = Check.DiffAssert.Name;
-    var ncols = 6;
-
-    newUrl  = UnCached(IcuIO.NewImageFile(dir, tname));
-    if (pass) {
-        status = "Snapshots are equal.";
-        shownUrl = newUrl;
-        ncols = 1;
-    } else if (String.IsNullOrEmpty(shownUrl)) {
-        currUrl = UnCached(IcuIO.CurrImageFile(dir, tname));
-        diffUrl = UnCached(IcuIO.DiffImageFile(dir, tname));
-        shownUrl = newUrl;
-    }
-    var cols = $"1fr repeat({ncols}, auto)";
+    diff = getDiff();
+    CPview.SetToolbar(toolbar());
 }
-
-<Styled>
-.icu .image-holder {
-    background: @XSS.darker(0.3);
-    overflow: auto;
-    height: auto;
-    max-height: 30em;
-    resize: vertical;
-    padding: 0.4em;
-    display:grid;
-}
-.icu .image-holder > img {
-    grid-area: 1 / 1 / 1 / 1;
-    overflow: hidden;
-    width: auto;
-    height: auto;
-}
-.icu .img-sizer {
-    visibility: hidden;
-}
-.icu .pixelate {
-    image-rendering: @browser_pix; 
-}
-</Styled>
-
 
 <div @onkeydown="KeyWasPressed">
 
-    @* --- test toolbar ---------------------------------------- *@
-    <GridLayout Cols="@cols" class="diff-toolbar">
-        <span> @status </span>
-        @if (!pass) {
-            <span class="boxed box-lined" @onmouseover=HoverNew>New</span>
-            if (isNew) {
-                <span />
-                <span />
-            } else {
-                <span class="boxed box-lined" @onmouseover=HoverCurr>Old</span>
-                <span class="boxed box-lined" @onmouseover=HoverDiff>Diff</span>
-            }
-            if (Check.Verify().Value) {
-                <span class="boxed box-skip" @onclick=SkipTest>Skip Image</span>
-            } else {
-                <span />
-            }
-            <span class="boxed box-pass" @onclick=SaveTest>Save Image</span>
-        }
-        <span class="boxed box-button" @onclick=@(()=>help.ToggleShow())>?</span>
-    </GridLayout>
-
-    <Popup @ref=help Title="Image Diff Help">
-        You can use these following interactions:<br/><br/>
-        <GridLayout Cols="auto 1fr">
-            <div>
-                <span class="btn-dark btn-key">Scroll Wheel</span>
-            </div>
-            <div> &nbsp; Zoom in/out image </div>
-            <div>
-                <span class="btn-dark btn-key">+</span> /
-                <span class="btn-dark btn-key">-</span>
-            </div>
-            <div> &nbsp; Zoom in/out image </div>
-
-            <div>
-                <span class="btn-dark btn-key">Mouse Drag</span>
-            </div>
-            <div> &nbsp; Move image</div>
-            <div>
-                <span class="btn-dark btn-key">Arrow Keys</span>
-            </div>
-            <div> &nbsp; Move image</div>
-
-            <div>
-                <span class="btn-dark btn-key">0</span> / 
-                <span class="btn-dark btn-key">R</span>
-            </div>
-            <div> &nbsp; Reset image </div>
-
-            <div>
-                <span class="btn-dark btn-key">P</span>
-            </div>
-            <div> &nbsp; Pixelate/Smooth image </div>
-
-            <div>
-                <span class="btn-dark btn-key">1</span> / 
-                <span class="btn-dark btn-key">2</span> /
-                <span class="btn-dark btn-key">3</span>
-            </div>
-            <div> &nbsp; Show New/Old/Diff image </div>
-        </GridLayout>
-        <br/>
-    </Popup>
-
-
-
     @* --- test results --------------------------------------- *@
-    <div class="image-holder">
+    <div class="image-holder" title=@diff.Desc>
         <img class="icu-image @pixelate" src="@shownUrl" id="@pzid" />
         <img class="icu-image img-sizer" src="@currUrl" />
-        <img class="icu-image img-sizer" src="@newUrl"/>
+        <img class="icu-image img-sizer" src="@newUrl" />
     </div>
 </div>

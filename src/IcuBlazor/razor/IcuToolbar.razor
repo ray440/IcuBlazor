@@ -3,16 +3,15 @@
 
 @code {
 
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
 
     [Parameter] public EventCallback<bool> OnUpdate { get; set; }
     void UpdateParent() { // Parent is typically TestRunner
-        base.InvokeAsync(()=>OnUpdate.InvokeAsync(true)); 
-    } 
+        base.InvokeAsync(()=>OnUpdate.InvokeAsync(true));
+    }
 
-    public string error = "";
+    public Exception? error = null;
     public string status = "";
-    public bool showSettings = false;
     public bool running = true;
     int numTests = 1, doneTests = 0;
 
@@ -28,7 +27,7 @@
     }
 
     void Abort(string msg) {
-        error = msg;
+        error = new Exception(msg);
         ICU.Session.AbortRun(msg);
         running = false;
         UpdateParent();
@@ -42,10 +41,25 @@
         }
     }
 
-    public void ToggleShowSettings() {
-        showSettings = !showSettings;
-        UpdateParent();
+    IcuSettings? setDlg;
+
+    void OnSettingsShown(bool open) {
+        if (!open) {
+            UpdateParent();
+        }
     }
+
+    //TestMethod lastm = null;
+    //void handle_accordion_view(TestMethod sm)
+    //{
+    //    // Accordion display: only show one selection at a time.
+    //    // - but UX is jumpy...
+    //    if (lastm != null && lastm != sm) {
+    //        lastm.Open = false;
+    //        lastm.OnChange.Notify(lastm);
+    //    }
+    //    lastm = sm;
+    //}
 
     void HandleEvent(IcuEvent e) {
         switch (e) {
@@ -69,6 +83,9 @@
             //base.InvokeAsync(StateHasChanged);
             //DBG.Log($"IcuEvent MethodEnd '{doneTests}    {m.Name}' => '{m.Outcome}'");
             break;
+        //case IcuEvent.Selected em:
+        //    handle_accordion_view(em.Item);
+        //    break;
         case IcuEvent.SuiteStart pg:
             //DBG.Log($"IcuEvent SuiteStart '{pg.Item.GetType().Name}'");
             break;
@@ -76,13 +93,20 @@
             //DBG.Log($"IcuEvent SuiteEnd '{pg.Item.GetType().Name}'");
             break;
         case IcuEvent.RunStart pg:
+            doneTests = 0;
             //DBG.Log($"IcuEvent RunStart '{pg.Item.GetType().Name}'");
             running = true;
             break;
         case IcuEvent.RunEnd pg:
             //DBG.Log($"IcuEvent RunEnd '{pg.Item.GetType().Name}'");
+            if (doneTests==0) {
+                var err = "No tests run.";
+                var f = ICU.Config.Filter;
+                if (f.Length > 0)
+                    err = $"{err}  Perhaps they were filtered out by '{f}'.";
+                Abort(err);
+            }
             status = "";
-            doneTests++;
             running = false;
             base.InvokeAsync(StateHasChanged);
             break;
@@ -104,46 +128,17 @@
     }
 }
 
-<Styled>
-.icu .main-toolbar {
-    background: #8af;
-    border-left: 0.3em #28f solid;
-    align-items: center;
-}
-
-.icu .filter-input {
-    border-width: 0;
-    padding: 0.2em 0.5em;
-}
-
-.icu .tb-btn {
-    font-size: 120%;
-    width: 2em;
-    text-align: center;
-    padding: 0.3em;
-    background: @XSS.lighter(0.1);
-}
-.icu .tb-btn:hover {
-    background: @XSS.lighter(0.4);
-}
-.icu .prog-bar {
-    height: 0.3em;
-    @*height: 100%;*@
-    border-radius: 0px;
-    background: @XSS.lighter(0.3);
-}
-</Styled>
-
 @{ 
     var p = 100.0*doneTests/numTests;
     var exec = running ? "oi-ban" : "oi-reload";
 }
 
-<GridLayout Cols="1fr repeat(3, auto)" class="main-toolbar">
-    <div>
-        <a href="http://icublazor.com/" target="_blank">
-            <img loading="lazy" alt="IcuBlazor" src=@ICU.GetLogo()>
-        </a>
+<div class="main-toolbar">
+<GridLayout Cols="auto 1fr repeat(3, auto)" style="align-items:center">
+    <a href="http://icublazor.com/" target="_blank">
+        <img loading="lazy" alt="IcuBlazor" src=@ICU.GetLogo()>
+    </a>
+    <span>
         @status
         @* -- calling StateHasChanged() above confuses BlazorStyled (sometimes).
         <div class="progress prog-bar">
@@ -151,11 +146,21 @@
                 style="width: @p%" aria-valuenow="@p"
                 aria-valuemin="0" aria-valuemax="100"></div>
         </div>*@
-    </div>
+    </span>
 
     <input class="filter-input" type="text" placeholder="Filter..." @bind="Filter" />
     @*<span class="oi oi-magnifying-glass tb-btn"></span>*@
 
     <span class="oi @exec tb-btn" @onclick="ToggleExecution"></span>
-    <span class="oi oi-cog tb-btn" @onclick="ToggleShowSettings"></span>
+
+    <DropDown OnShown=@OnSettingsShown>
+        <LabelContent>
+            <span class="oi oi-cog tb-btn"></span>
+        </LabelContent>
+        <DropContent>
+            <IcuSettings @ref=@setDlg />
+        </DropContent>
+    </DropDown>
+
 </GridLayout>
+</div>

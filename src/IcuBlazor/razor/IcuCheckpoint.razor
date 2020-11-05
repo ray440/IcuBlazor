@@ -1,114 +1,67 @@
 ﻿@page "/IcuCheckpoint"
 
+@using IcuBlazor.razor.Views
+
 @code {
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
-    [Parameter] public Checkpoint Check { get; set; }
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
+    [Parameter] public Checkpoint Check { get; set; } = null!; // non-null required
     [Parameter] public bool Verify { get; set; } = false;
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+
+    public void Update() { StateHasChanged(); }
+    public void SetToolbar(RenderFragment t) { Toolbar = t; }
 }
 @{
     var CP = Check;
     var si = OutcomeIcon.OutcomeStat(CP.Outcome);
-    var box = "box box-" + si.State;
-    var hasDetail = 
-        (CP.testType.Tag != TestType.Tags.Assert)
-        || !string.IsNullOrWhiteSpace(CP.msg);
+    var box = "box-" + si.State;
+    var info = String.IsNullOrEmpty(CP.InfoLog)
+                ? null : new InfoLog(CP.InfoLog);
+    var hasDetail = (CP.model != null || info != null);
 
     var phdr = "";
     if (ICU.Config.ViewLayout == ViewLayout.Flat) {
         var p = CP.Parent.Value as TestMethod;
         phdr = (p != null) ? $"{p.Parent.Value.Name}\\{p.Name}: " : "";
     }
+    var showHeader = Str.isOk(CP.header);
 }
 
-<Styled>
-.icu .boxed {
-    padding: 0.1em 0.7em;
-    align-items: center;
-    @*border: 0.2em solid transparent;*@
-    opacity: 0.75;
-}
-.icu .boxed:hover {
-    opacity: 1.0;
-}
-
-.icu .box {
-    @*margin: 0.2em 0;
-    padding: 0.2em;*@
-    margin: 3px 0;
-    padding: 3px;
-    align-items: center;
-}
-.icu .box-lined {
-    border-width: 0px;
-    border-bottom: 0.2em solid @XSS.darker(0.1);
-}
-.icu .box-lined:hover {
-    border-bottom-color: black;
-}
-.icu .box-button {
-    @*background: @XSS.lighter(0.1);*@
-}
-.icu .box-button:hover {
-    background: @XSS.darker(0.1);
-}
-
-.icu .box-pass {
-    background: [--pass-light];
-    @*border-color: [--pass-dark];*@
-}
-.icu .box-fail {
-    background: [--fail-light];
-    @*border-color: [--fail-dark];*@
-}
-.icu .box-skip {
-    background: [--skip-light];
-    @*border-color: [--skip-dark];*@
-}
-.icu .box-unknown {
-    background: [--skip-light];
-    @*border-color: [--skip-dark];*@
-}
-
-.icu .test-assert {
-    font-size: 80%;
-    overflow-x: auto;
-    white-space: pre-wrap;
-}
-
-.icu .diff-toolbar {
-    background: @XSS.darker(0.1);
-    grid-template-columns: 1fr repeat(3, auto);
-    align-items: center;
-}
-.icu .btn-key {
-    font-family: [--font-fixed];
-    border-radius: .25rem;
-    padding: 0.2em 0.4em;
-}
-</Styled>
-
+<CascadingValue Value="@this" Name="CPview" IsFixed="true">
 <div class="@box" @key=@CP.Path>
-    <Folder Tree="@CP" HasDetail="@hasDetail" StayOpen="@Verify">
+    <Folder Tree="@CP" HasDetail="@hasDetail" ShowHeader="@showHeader" StayOpen="@Verify">
         <HeaderTitle>
-            <OutcomeIcon Outcome="@CP.Outcome" />&nbsp;
-            <span class="muted-text">@phdr</span> &nbsp; @CP.header
+            <GridLayout Cols="auto 1fr auto" class="cp-toolbar">
+                <OutcomeIcon Outcome="@CP.Outcome" />
+                <span><span class="muted-text">@phdr</span>@CP.header</span>
+                @if (CP.Open && Toolbar != null) {
+                    @Toolbar
+                }
+            </GridLayout>
         </HeaderTitle>
         <Detail>
+            @if (info != null) {
+                <InfoLogView Model="@info"/>
+            }
             @switch (CP.testType.Tag) {
-            case TestType.Tags.Assert:
-                <div class="test-assert"><pre>@CP.msg</pre></div>
-                break;
             case TestType.Tags.TextDiff:
-                var d = CP.DiffAssert;
-                <DiffText OldText=@d.Expect NewText=@d.Result />
+                var d = CP.model as DiffFileAssert;
+                if (d != null) {
+                    <DiffText OldText=@d.Expect NewText=@d.Result />
+                }
                 break;
-            case TestType.Tags.LogDiff:
+            case TestType.Tags.FileDiff:
                 <IcuDiffText Check="@CP" />
                 break;
             case TestType.Tags.ImageDiff:
                 <IcuDiffImage Check="@CP" />
                 break;
+            //case TestType.Tags.Assert:
+            default:
+                <DynamicView Model="@CP.model"/>
+                break;
             }
         </Detail>
     </Folder>
 </div>
+</CascadingValue>

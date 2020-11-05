@@ -1,26 +1,33 @@
 ﻿@page "/IcuDiffText"
 
 @code {
-    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; }
-    [Parameter] public Checkpoint Check { get; set; }
-    Popup help;
+    [CascadingParameter(Name = "ICU")] IcuClient ICU { get; set; } = null!; // non-null required
+    [CascadingParameter(Name = "CPview")] IcuCheckpoint CPview { get; set; } = null!; // non-null required
+    [Parameter] public Checkpoint Check { get; set; } = null!; // non-null required
+    DiffFileAssert diff = null!; // ok init
 
-    string status = "Strings are not equal.";
+    DiffFileAssert getDiff()
+    {
+        var d = Check.model as DiffFileAssert;
+        if (d == null) throw (new Exception("Invalid DiffFileAssert"));
+        return d;
+    }
+
+    string status = "";
     async Task ShowStatus(string msg, int wait)
     {
         status = msg;
-        StateHasChanged();
-        await Task.Delay(500);
+        CPview.Update(); //StateHasChanged();
+        await Task.Delay(wait);
     }
 
     async Task VerifyTest(bool save) {
-        var diff = Check.DiffAssert;
         try {
             if (save) {
                 await ShowStatus("Saving...", 10);
                 diff.Expect = diff.Result;
-                await IcuRpc.SaveTest(ICU.Session, diff);
-                status = "";
+                await IcuRpc.SaveFileTest(ICU.Session, diff);
+                status = "Saved";
             }
             Check.SetSaveSkip(save);
             Check.Verify().Value = false;
@@ -30,67 +37,64 @@
         StateHasChanged();
         ICU.MsgBus.Notify(IcuEvent.NewRefreshView(""));
     }
-    async Task Click(bool save)
+    async Task do_save(bool save)
     {
         if (ICU.Config.CanSaveTestData) {
             await VerifyTest(save);
         } else {
             await ShowStatus("Saving...", 500);
-            await ShowStatus("Canceled: Saving test data has been disabled.", 10);
+            await ShowStatus("Canceled: Saving is disabled.", 10);
         }
     }
-    void SkipTest() => _ = Click(false);
-    void SaveTest() => _ = Click(true);
+    void SkipTest() => _ = do_save(false);
+    void SaveTest() => _ = do_save(true);
 
+    RenderFragment toolbar()
+    {
+        var pass = (Check.Outcome == Outcome.Pass);
+        if (diff.WSdiffs && status.Length == 0) {
+            status = "* Detected newline/whitespace diffs";
+        }
+        var ncols = pass ? 1 : 3;
+        var cols = $"1fr repeat({ncols}, auto)";
+
+        return (
+@<GridLayout Cols=@cols class="darker10">
+    @if (status.Length > 0) {
+        <span> @status &nbsp;&nbsp;</span>
+    } else {
+        <span></span>
+    }
+    @if (!pass) {
+        @if (Check.Verify().Value) {
+            <Btn class="hover-brighter box-skip" @onclick=SkipTest>Skip Result</Btn>
+        } else {
+            <span />
+        }
+        <Btn class="hover-brighter box-pass" @onclick=SaveTest>Save Result</Btn>
+    }
+    <DropDown OpenOnHover="false">
+        <LabelContent>
+            <div class="hover-brighter hover-lighter40">?</div>
+        </LabelContent>
+        <DropContent>
+            <PopupHelp name="Text"/>
+        </DropContent>
+    </DropDown>
+</GridLayout>
+        );
+    }
 }
 @{
-    var d = Check.DiffAssert;
-    var pass = (Check.Outcome == OutcomeType.Pass);
-    var ncols = 3;
-    if (pass) {
-        ncols = 1;
-        status = "Strings are equal.";
+    diff = getDiff();
+    var (e, r) = (diff.Expect, diff.Result);
+    if (diff.WSdiffs) {
+        // show whitespace diffs--but don't save them!
+        e = DiffService.WSescape(e);
+        r = DiffService.WSescape(r);
     }
-    var cols = $"1fr repeat({ncols}, auto)";
+    CPview.SetToolbar(toolbar());
 }
 
-
-<div>
-    @* --- test toolbar ---------------------------------------- *@
-    <GridLayout Cols=@cols class="diff-toolbar">
-        <span> @status </span>
-        @if (!pass) {
-            @if (Check.Verify().Value) {
-                <span class="boxed box-skip" @onclick=SkipTest>Skip Result</span>
-            } else {
-                <span />
-            }
-            <span class="boxed box-pass" @onclick=SaveTest>Save Result</span>
-        }
-        <span class="boxed box-button" @onclick=@(()=>help.ToggleShow())>?</span>
-    </GridLayout>
-
-    <Popup @ref=help Title="Text Diff Help">
-        You can use these shortcut keys:<br/><br/>
-        <GridLayout Cols="auto 1fr">
-            <div>
-                <span class="btn-dark btn-key">L</span>, 
-                <span class="btn-dark btn-key">3</span>, 
-                <span class="btn-dark btn-key">#</span>
-            </div>
-            <div> &nbsp; Show line numbers </div>
-
-            <div>
-                <span class="btn-dark btn-key">D</span>, 
-                <span class="btn-dark btn-key">=</span>
-            </div>
-            <div> &nbsp; Show identical lines </div>
-        </GridLayout>
-        <br/>
-    </Popup>
-
-
-    @* --- test results --------------------------------------- *@
-    <DiffText OldText=@d.Expect NewText=@d.Result />
-</div>
+<DiffText OldText=@e NewText=@r />
 
