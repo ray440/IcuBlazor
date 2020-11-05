@@ -4,22 +4,21 @@ using System.Threading.Tasks;
 using System.Net.Http;
 
 using Microsoft.Extensions.DependencyInjection;
-using BlazorStyled;
-using System.Linq;
+using Microsoft.JSInterop;
 
 namespace IcuBlazor
 {
 
     public static class TaskExtensions
     {
-        public static async Task Log(this Task t, string title)
+        public static async Task Wrap(this Task t, string title)
         {
             var iid = BaseUtils.PrefixedID("..");
             DBG.Indent(3, title + " { "+iid);
             await t;
             DBG.Indent(-3, "} "+iid);
         }
-        public static async Task<T> LogT<T>(this Task<T> t, string title)
+        public static async Task<T> WrapR<T>(this Task<T> t, string title)
         {
             var iid = BaseUtils.PrefixedID("..");
             DBG.Indent(3, title + " { "+iid);
@@ -39,20 +38,29 @@ namespace IcuBlazor
         {
             services.AddSingleton(config);
             services.AddScoped<UIHelper>();
+            //services.AddSingleton(sp => {
+            //    if (!ENV.IsWasm) return ((IJSInProcessRuntime)null);
+            //    return (IJSInProcessRuntime)sp.GetService<IJSRuntime>();
+            //});
+            //services.AddSingleton(sp => {
+            //    if (!ENV.IsWasm) return ((IJSUnmarshalledRuntime)null);
+            //    return (IJSUnmarshalledRuntime)sp.GetService<IJSRuntime>();
+            //});
+
             services.AddTransient<IcuClient>(); // one for each IcuTestViewer
-            services.AddBlazorStyled(!true, !true);
             services.AddTransient(typeof(RPC.IProxy), RPC.ProxyType(config));
             services.AddHttpClient("ICUapi");
+            services.AddProtectedBrowserStorage();
 
             if (String.IsNullOrEmpty(config.IcuServer)) { // probably server
             } else { // client
                 var uri = new Uri(config.IcuServer);
-                ENV.IsLocalhost = uri.IsLoopback;
+                ENV.IsLocalhost = uri.IsLoopback;                
             }
             ENV.IsIcuEnabled = true;
             
             DBG.Verbosity = config.Verbosity;
-            DBG.SetSystem("WA");
+            DBG.SetSystem("ICU");
             return services;
         }
 
