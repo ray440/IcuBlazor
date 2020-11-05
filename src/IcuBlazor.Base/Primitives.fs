@@ -2,36 +2,24 @@
 
 open System
 open System.Collections.Generic
-open System.Runtime.InteropServices
 open Microsoft.FSharp.Core
 
 module ENV =
-
-    //let mutable IsWasm = RuntimeInformation.IsOSPlatform(OSPlatform.Create("WEBASSEMBLY"))
-    let mutable IsWasm = (Type.GetType("Mono.Runtime") |> box <> null)
+    let IsWasm = OperatingSystem.IsBrowser()
     let mutable IsIcuEnabled = false
     let mutable Browser = ""
     let mutable wwwroot = ""
     let mutable IsLocalhost = true
+    let inline now() = DateTime.Now.Ticks
 
 module Logger =
 
     let mutable sys = "[] "
 
-    let Out(s:string) = 
+    let Out(s:string) =
         //System.Diagnostics.Debug.WriteLine(s)
         System.Console.WriteLine(s)
 
-    let private indent_strings =
-        let d = new Dictionary<_,_>()
-        fun k ->
-            match d.TryGetValue k with
-            | true, v -> v
-            | _  ->
-                d.[k] <- String.replicate k " "
-                d.[k]
-
-    let inline now() = DateTime.Now.Ticks
     let default_log =
         if ENV.IsWasm then
             fun str -> Out(sys + str)
@@ -45,6 +33,15 @@ module Logger =
                 let tid = Threading.Thread.CurrentThread.ManagedThreadId
                 Out(sprintf "%3d%s%s" tid sys str)
 
+    let IndentStrings = // zzz optimize with array
+        let d = new Dictionary<_,_>()
+        fun k ->
+            match d.TryGetValue k with
+            | true, v -> v
+            | _  ->
+                d.[k] <- String.replicate k " "
+                d.[k]
+
     type Indenter(logger: string -> unit) =
         let mutable in_num = 0;
         let mutable in_str = ""
@@ -53,7 +50,7 @@ module Logger =
 
         let set_indent i = 
             in_num <- max 0 i
-            in_str <- indent_strings in_num
+            in_str <- IndentStrings in_num
         let set_inc inc = set_indent (in_num + inc)
 
         member __.Reset() =
@@ -66,15 +63,32 @@ module Logger =
 
         member __.Log s = log (s)
 
+
+    type StringBuilderLog() =
+        let buf = new System.Text.StringBuilder()
+        let _log(s:string) = buf.Append(s+"\n") |> ignore
+        let ind = new Indenter(_log)
+
+        member val Buffer = buf
+        member __.Log s = ind.Log s
+        member __.Indent(inc, title) = ind.Indent(inc, title)
+        member __.Flush() =
+            let s = buf.ToString()
+            buf.Clear() |> ignore
+            s
+
 module DBG =
     open Microsoft.Extensions.Logging
 
     let mutable Verbosity = LogLevel.Information
 
-    let private _ind = new Logger.Indenter(Logger.default_log)
+    let mutable _ind = new Logger.Indenter(Logger.default_log)
 
     let SetSystem sys = 
         Logger.sys <- sprintf "[%s] " sys
+
+    let SetLogger (logger:Action<string>) = 
+        _ind <- new Logger.Indenter(logger.Invoke)        
         _ind.Indent(0, "")
 
     let Indent(inc, title) = 
@@ -102,14 +116,13 @@ module DBG =
         Indent(-3, "}")
         return x
     }
-
+    let IndentAct title (f:Action) = // for c#
+        Indent(3, title + " {")
+        f.Invoke()
+        Indent(-3, "}")
+        
     //open System.Threading.Tasks
 
-    //let IndentAct title (f:Action) = // for c#
-    //    Indent(3, title + " {")
-    //    f.Invoke()
-    //    Indent(-3, "}")
-        
     //let IndentTask title (f:Task) = 
     //    async {
     //        let iid = Logger.PrefixedID ".."
@@ -127,16 +140,34 @@ module DBG =
     //        return x
     //    } |> Async.StartAsTask
 
+    let seq_log t f s =
+        IndentF t <| fun() ->
+            if (Seq.isEmpty s)
+            then Log("seq is empty")
+            else s |> Seq.iteri (fun i e -> 
+                    Log(sprintf "%s[%d] = %A" t i (f e)))
+        s
+
+    /// log each item inline as they are executed
+    let seq_list t s = seq_log t id s
+
 
 module Seq =
     let inline exclude f (s:seq<'a>) = s |> Seq.filter (f >> not)
 
+//module Option =
+//    let fromObj (x:obj) = if x = null then None else (Some x)
+
 module Str =
 
-    let isOk s = not(String.IsNullOrWhiteSpace(s))
+    let inline isEmpty s = String.IsNullOrWhiteSpace s
+    let inline isOk s = not(isEmpty s)
 
     let inline Split (c:string) (text:string) = 
         text.Split([| c |], StringSplitOptions.None)
+
+    let ReplaceAll search replace s = 
+        s |> Split search |> String.concat replace
 
     let SplitAndTrim sep s =
         Split sep s
