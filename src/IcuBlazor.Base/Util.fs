@@ -92,6 +92,8 @@ module BaseUtils =
     /// Memoize the given function.
     let memoize f = memoizeWith (CDict<_,_>()) id f
 
+    let memoizeF (f:Func<_,_>) = memoize f.Invoke
+
     // allows you to store multiple items for one key
     type MultiDict<'K, 'V when 'K:equality>() = 
         // NOTE: different layers of locking are required
@@ -146,87 +148,71 @@ module BaseUtils =
                     v <- x
                     subs.Notify v 
 
-//[<AutoOpen>]
-//module Exception = 
+module Reflect = 
+    open System.Reflection
 
-    type IcuException(title:string, help:string) =
-        inherit Exception(title)
+    let WithAttr attrType (m:MemberInfo) =
+        m.GetCustomAttributes(attrType, false).Length > 0
 
-        member val Help = help
+    let AsmList a = 
+        if (box a<>null) then [|a|] else 
+            let can_ignore (s:string) = 
+                s.StartsWith("System.") || s.StartsWith("Microsoft.")
+            AppDomain.CurrentDomain.GetAssemblies()
+            |> Seq.exclude(fun a -> can_ignore a.FullName)
+            |> Seq.toArray
 
-        override e.ToString() =
-            SF "IcuException: %s\n%s\n%s" title help e.StackTrace
+    let AllAsmTypes(a:Assembly) = 
+        try 
+            a.GetTypes()
+        with _ -> // some assemblies can't be loadded. Ignore them.
+            [||]
 
-    type IcuHelpException(tag:string, title:string, context:obj) =
-        inherit Exception(title)
+    let AllTypes(asms:Assembly[]) = 
+        asms |> Seq.map AllAsmTypes |> Seq.concat
 
-        member val Tag = tag
-        member val Context = context
-        //override e.ToString() =
-        //    SF "IcuException: %s\n   (see %s)\n%s\n" title e.Link e.StackTrace
+    // Note: this is fast but can take up a lot of memory
+    let AllLoadedTypes = lazy(AllTypes(AsmList(null)) |> Seq.toArray)
 
-module Conv =
-    open Newtonsoft.Json
+    let AllSubclassOf<'T>(asms) =
+        let baseType = typeof<'T>
+        AllTypes asms |> Seq.filter(fun t -> t.IsSubclassOf(baseType))
 
-    let ToJson(v) = JsonConvert.SerializeObject(v)
-    let FromJson<'T>(js:string) = JsonConvert.DeserializeObject<'T>(js)
+    let FindClass = 
+        let find_class(n:string) =
+            AllLoadedTypes.Value
+            |> Seq.filter(fun t -> n.Equals(t.Name))
+            |> Seq.tryHead
 
-module DiffService =
-    open DiffPlex
-    
-    let diffBuilder = Differ() |> DiffBuilder.SideBySideDiffBuilder
+        memoize find_class
 
-    let GetDiffs(oldText, newText) =
-        diffBuilder.BuildDiffModel(oldText, newText, false)
+    let private bindingFlags = BindingFlags.Public ||| BindingFlags.Instance
+    let private indexProp(mi:PropertyInfo) = mi.GetIndexParameters().Length > 0
+    let private isMethodBase (mi:PropertyInfo) = 
+        mi.PropertyType.FullName.StartsWith("System.Reflection.MethodBase") 
 
+    let private get_props (t:Type) =
+        t.GetProperties(bindingFlags)
+        |> Array.sortBy(fun t -> t.MetadataToken)
+        |> Seq.exclude isMethodBase
+        |> Seq.exclude indexProp // foo.Item(x) is a property, ignore them
+    let GetProps = memoize get_props
 
-module SlashPath = 
-    let FromString = 
-        let toArray path = 
-            path |> Str.Split "/" |> Array.filter(fun p -> p.Length > 0)
-        memoize toArray
+    let private get_prop_value v (pi:PropertyInfo) = 
+        try pi.GetValue(v)
+        with e -> e.Message :> obj
 
-    let Make (root:string) (node:string) = 
-        if root.EndsWith("/")
-        then root + node
-        else SF "%s/%s" root node
+    let FieldValues (v:obj) =
+        GetProps (v.GetType())
+        |> Seq.map(fun pi -> pi.Name, get_prop_value v pi)
 
-module Tree =
-
-    type Base(parent:Option<Base>, name) =
-        let path = 
-            let root = if parent.IsSome then parent.Value.Path else ""
-            SlashPath.Make root name
-        let onChange = new Subscribable<obj>()
-    
-        member val Path = path
-        member val Name = name
-        member val OnChange = onChange
-        member val Open = false with get, set
-        member g.ToggleOpen() = g.Open <- not g.Open
-
-
-    type Node<'Kid>(parent, name) =
-        inherit Base(parent, name)
-
-        let kids = new CList<'Kid>();
-        let lookup = new CDict<string, 'Kid>();
-
-        member val Parent = parent
-        member val Kids = kids
-        member val Lookup = lookup
-
-        member __.Add key c =
-            kids.Add(c)
-            lookup.Set(key, c)
-    
-        member __.Clear() =
-            kids.Clear()
-            lookup.Clear()
-
-    let rec DepthFirstWalk(root:Node<_>) = seq {
-        for s in root.Kids.List() do
-            yield! (DepthFirstWalk s)
-        yield box root
-    }
-
+    let CleanStackTrace st skipHeader = 
+        Str.Split "\n" st
+        |> Seq.skip skipHeader
+        |> Seq.map(fun l -> if l=null then "" else l)
+        |> Seq.exclude(Str.Contains "/_framework/")
+        |> Seq.exclude(Str.Contains "<anonymous>")
+        |> Seq.exclude(Str.Contains "<filename unknown>")
+        |> Seq.exclude(Str.Contains "  at IcuBlazor.")
+        |> Seq.exclude(Str.Contains "  at Microsoft.")
+        |> Str.Join "\n"
