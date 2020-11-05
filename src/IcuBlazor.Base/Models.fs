@@ -1,6 +1,26 @@
 ﻿namespace IcuBlazor
 
 open System
+open System.ComponentModel.DataAnnotations
+
+//[<AutoOpen>]
+//module Exception = 
+
+type IcuException(title:string, help:string) =
+    inherit Exception(title)
+
+    member val Help = help
+
+    override e.ToString() =
+        SF "IcuException: %s\n%s\n%s" title help e.StackTrace
+
+type IcuHelpException(tag:string, title:string, context:obj) =
+    inherit Exception(title)
+
+    member val Tag = tag
+    member val Context = context
+    //override e.ToString() =
+    //    SF "IcuException: %s\n   (see %s)\n%s\n" title e.Link e.StackTrace
 
 type ViewLayout =
     | Tree = 0
@@ -42,36 +62,18 @@ type IcuConfig() =
     //    nc.SessionID <- Guid.NewGuid().ToString()
     //    nc
 
+type Outcome = 
+    | Unknown   = -2
+    | Logging   = -1
+    | Pass      = 0
+    | Skip      = 1
+    | New       = 3
+    | Fail      = 4
+    | Running   = 10
+   
 module Models = 
 
-    type TestType = Assert | TextDiff | LogDiff | ImageDiff
-
-    type OutcomeType = 
-        Unknown | Running | Fail | Skip | Pass | New
-        with
-            member r.Order = 
-                match r with
-                | Unknown -> -2
-                | Pass -> 0
-                | Skip -> 1
-                | New -> 3
-                | Fail -> 4
-                | Running -> 10
-
-            static member Max (a:OutcomeType) (b:OutcomeType) =
-                if a.Order > b.Order then a else b
-
-            static member MaxOf lst = 
-                lst |> Seq.fold OutcomeType.Max Unknown
-            //interface IComparable with
-            //    member __.c
-   
-    type DiffAssert() = // Note: this must be serializable
-        member val Name = "" with get, set
-        member val Expect = "" with get, set
-        member val Result = "" with get, set
-        member val IsImgTest = false with get, set
-    
+    type TestType = Assert | TextDiff | FileDiff | ImageDiff
 
     type SnapshotArgs() = // Note: this must be serializable
         member val Name = "" with get, set
@@ -80,6 +82,7 @@ module Models =
         member val W = 0. with get, set
         member val H = 0. with get, set
         member val Local = ENV.IsLocalhost
+
         static member FromJson name json_rect =
             let r = Conv.FromJson<float[]>(json_rect)
             let a = new SnapshotArgs()
@@ -90,25 +93,29 @@ module Models =
             a.H <- r.[3]
             a
 
+    type InfoLog(log:string) =
+        member val Log = log
 
     // Note: Checkpoint must be serializable
     type Checkpoint(parent, name, 
-                    ttype:TestType, outcome:OutcomeType, hdr:string, msg:string) =
+                    ttype:TestType, outcome:Outcome, hdr:string) =
         inherit Tree.Node<string>(parent, name)
     
-        let _diff = new DiffAssert()
         let _verify = lazy(new Proc.Observer<bool>(false))
+
         member val testType = ttype
         member val header = hdr
-        member val msg = msg
-        member val Outcome : OutcomeType = outcome with get, set
-        member val DiffAssert = _diff
+        member val model = null with get, set
+        member val InfoLog = "" with get, set
+
+        member val Outcome : Outcome = outcome with get, set
         member __.Verify() = _verify.Value
+
         member this.SetSaveSkip(save) = 
             if save then
-                this.Outcome <- Pass
-            elif (this.Outcome <> New) then
-                this.Outcome <- Skip
+                this.Outcome <- Outcome.Pass
+            elif (this.Outcome <> Outcome.New) then
+                this.Outcome <- Outcome.Skip
         
 
     type CheckpointGrouping() = // zzz replace with dynamically sorted list
@@ -122,6 +129,36 @@ module Models =
             then g.GetList(oc).List()
             else EMPTY_CPS
 
+    type DiffFileAssert() = // Note: this must be serializable
+        member val Name = "" with get, set
+        member val Expect = "" with get, set
+        member val Result = "" with get, set
+        member val Same = false with get, set
+        member val WSdiffs = false with get, set
+        static member Make(name, expect, result) =
+            let (same, wsdiff) = DiffService.WSdiffs expect result
+            let d = new DiffFileAssert()
+            d.Name <- name
+            d.Expect <- expect
+            d.Result <- result
+            d.Same <- same
+            d.WSdiffs <- wsdiff
+            d
+
+    type DiffImageAssert() = // Note: this must be serializable
+        member val Name = "" with get, set
+        member val Desc = "" with get, set
+        static member Make(name, desc) =
+            let d = new DiffImageAssert()
+            d.Name <- name
+            d.Desc <- desc
+            d
+
+    let OutcomeType_Max (a:Outcome) (b:Outcome) =
+        if a > b then a else b
+
+    let OutcomeType_MaxOf lst = 
+        lst |> Seq.fold OutcomeType_Max Outcome.Unknown
 
     type ThisFunc = {
         Name: string
@@ -135,17 +172,19 @@ module Models =
         member val ThisFunc = thisFunc
 
         member val RunTime = 0.0 with get, set
-        member val Outcome = Unknown with get, set
+        member val Outcome = Outcome.Unknown with get, set
         member this.CalcOutcome() = 
             let v = this.Kids.Copy() 
                     |> Seq.map(fun r -> r.Outcome) 
-                    |> OutcomeType.MaxOf
+                    |> OutcomeType_MaxOf
             this.Outcome <- v
             v
-        member this.NextCheckpoint ttype outcome hdr msg = 
+        member this.NextCheckpoint ttype outcome hdr model = 
             let parent = this :> Tree.Base |> Some
             let nth = this.Kids.Count.ToString()
-            Checkpoint(parent, nth, ttype, outcome, hdr, msg)
+            let cp = Checkpoint(parent, nth, ttype, outcome, hdr)
+            cp.model <- model
+            cp
 
         member this.AddCheckpoint(check:Checkpoint) = 
             lock this <| fun () ->
@@ -158,13 +197,13 @@ module Models =
         let sub = tree.Kids
         let baseTree = tree :> Tree.Base |> Some
         let methods = new ResizeArray<TestMethod>()
-        let mutable oc = OutcomeType.Unknown
+        let mutable oc = Outcome.Unknown
 
         let calc_outcome() = 
             methods |> Seq.iter(fun tm -> tm.CalcOutcome() |> ignore)
-            let x = sub.Copy() |> Seq.map (fun ts -> ts.Outcome) |> OutcomeType.MaxOf
-            let y = methods |> Seq.map (fun a -> a.Outcome) |> OutcomeType.MaxOf
-            oc <- OutcomeType.Max x y
+            let x = sub.Copy() |> Seq.map (fun ts -> ts.Outcome) |> OutcomeType_MaxOf
+            let y = methods |> Seq.map (fun a -> a.Outcome) |> OutcomeType_MaxOf
+            oc <- OutcomeType_Max x y
 
         let ts_make name = new TestSuite(baseTree, name)
         let ts_find name = tree.Lookup.Find name
