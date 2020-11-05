@@ -1,0 +1,78 @@
+﻿@page "/OpenCloseAnim"
+
+@inject UIHelper UI
+
+@code {
+
+    [Parameter] public bool Show { get; set; } = false;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string OpenAnim { get; set; } = "slide open";
+    [Parameter] public string CloseAnim { get; set; } = "slide";
+    [Parameter] public int AnimDuration { get; set; } = 500;
+
+    string id = BaseUtils.PrefixedID("oc-");
+    bool init = true;
+    bool enable = false; // zzz for now...
+    bool showContent = false;
+    //bool start = false;
+    int h = 1000; // zzz may be too small
+
+    async Task animate(bool show)
+    {
+        if (showContent == show)
+            return;
+        if (show) {
+            showContent = show;
+        } else {
+            // Closing: delay then remove from DOM
+            if (!init)
+                await Task.Delay(AnimDuration+100);
+            showContent = show;
+            StateHasChanged();
+        }
+        init = false;
+    }
+
+    //protected override async Task OnAfterRenderAsync(bool firstRender)
+    //{
+    //    if (showContent) {
+    //        var r = await UI.JS.GetClientRect($"#{id}");
+    //        if (r.Height > 20) {
+    //            // works well for fixed height children 
+    //            // but folder kids can open/close & so have variable heights
+    //            var newh = (int)(r.Height+80);
+    //            if (h == 11000 || h < newh)
+    //                h = newh;
+    //            //h = Math.Max(h, newh);
+    //            UI.Log($"{id}: h = {h}");
+    //        }
+    //    }
+    //    await base.OnAfterRenderAsync(firstRender);
+    //}
+}
+
+@if (enable) {
+#pragma warning disable CS4014
+    var anim = Show ? OpenAnim : CloseAnim;
+    var dur = $"transition-duration:{(init?10:AnimDuration)}ms";
+    var show_height = $"max-height:{(Show?h:0)}px";
+    //var overflow = start ? "overflow: hidden;" : ""; // zzz
+    var overflow = "overflow: hidden;";
+    var astyle = $"{dur};{show_height};{overflow}";
+    animate(Show); // f&f. Mostly to delay closing & removing ChildContent from DOM
+
+    @*@($"{h} {showContent} {astyle}")*@
+    <div xid=@id class=@anim style=@astyle>
+        @if (showContent) { // don't create element unless needed.
+            <div id=@id>
+            @ChildContent
+            </div>
+        }
+    </div> 
+} else {
+    if (Show) {
+       @ChildContent
+    }
+}
+
+
