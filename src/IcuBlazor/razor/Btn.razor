@@ -1,0 +1,16 @@
+﻿@page "/Btn"
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object>? Attributes { get; set; }
+    IDictionary<string, object>? attrs { get; set; }
+
+    protected override void OnInitialized() {
+        attrs = BlazorUI.AddAttrs(Attributes, "btnbox", "");
+        base.OnInitialized();
+    }
+}
+<div @onclick:stopPropagation="true" @attributes="attrs">
+    @ChildContent
+</div>

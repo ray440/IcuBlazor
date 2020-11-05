@@ -1,0 +1,24 @@
+﻿@page "/ButtonBar"
+
+@code {
+    [Parameter] public List<(string,Action)> Actions { get; set; } = null!; // required
+    [Parameter] public EventCallback<string> Clicked { get; set; }
+
+    void exec(string name, Action act)
+    {
+        act.Invoke();
+        Clicked.InvokeAsync(name);
+    }
+
+}
+
+@{
+    var cols = $"repeat({Actions.Count()}, minmax(0, 1fr))";
+}
+
+<GridLayout Cols=@cols>
+    @foreach (var (name, act) in Actions) {
+        <Btn class="darker5 hover-darker10" 
+             @onclick=@(()=>exec(name,act))>@name</Btn>
+    }
+</GridLayout>
