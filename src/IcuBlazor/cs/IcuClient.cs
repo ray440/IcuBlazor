@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Net.Http;
 using Microsoft.AspNetCore.WebUtilities;
-using static IcuBlazor.BaseUtils;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using static IcuBlazor.Models;
 
 namespace IcuBlazor
@@ -78,27 +78,38 @@ namespace IcuBlazor
 
     public class UIHelper
     {
-        internal JSInterop JS;
-        internal LocalStorage LS = null;
+        IJSRuntime JSR;
+        internal JSInit JSinit = null!; // set in InitAsync()
+        internal JSInterop JS = null!; // set in InitAsync()
+        internal LocalStorage LS = null!; // set in InitAsync()
 
-        public UIHelper(Microsoft.JSInterop.IJSRuntime jsRuntime)
+        public UIHelper(IJSRuntime jsr) // must be @inject-able
         {
-            JS = new JSInterop(jsRuntime);
-            LS = new LocalStorage(JS);
+            JSR = jsr;
+        }
+
+        internal async Task InitAsync()
+        {
+            if (JS == null) {
+                JSinit = await JSInit.InitAsync(JSR);
+                JS = JSinit.JSI;
+                LS = JSinit.LS;
+                DBG.SetLogger(JS.Log);
+                DBG.SetSystem(ENV.IsWasm ? "CSB" : "SSB");
+            }
+        }
+
+
+        public void Log(string s)
+        {
+            JS.Log(s);
         }
 
         /// <summary>
         /// Excute javascript code.
         /// </summary>
         /// <returns>result as a string</returns>
-        public ValueTask<string> Eval(string code) => JS.Eval(code);
-
-        /// <summary>
-        /// Excute javascript code and return result as JSON
-        /// </summary>
-        /// <param name="code">Javascript code</param>
-        public ValueTask<T> EvalJson<T>(string code) => JS.EvalJson<T>(code);
-        
+        public ValueTask<T> Eval<T>(string code) => JS.Eval<T>(code);        
 
         public ValueTask Cleanup() => JS.Cleanup();
 
@@ -119,24 +130,30 @@ namespace IcuBlazor
         // e.g. Firing a KeyEvent on a text field will not update the UI.
         //public ValueTask SendKeys(ElemRef e, string v) => JS.SendKeys(e, v);
 
-        ValueTask<string> Content(ElemRef e, bool html) => JS.Content(e, html);
+        ValueTask<string> GetContent(ElemRef e, bool asHtml) => JS.GetContent(e, asHtml);
+
+        /// <summary>
+        /// Replace the content of an element with new content.
+        /// </summary>
+        public ValueTask<string> SetContent(ElemRef e, string html) => JS.SetContent(e, html);
 
         /// <summary>
         /// Get the html content of an html element.
         /// </summary>
-        public ValueTask<string> HtmlContent(ElemRef e) => Content(e, true);
+        public ValueTask<string> HtmlContent(ElemRef e) => GetContent(e, true);
 
         /// <summary>
         /// Get the text content of an html element 
         /// </summary>
-        public ValueTask<string> TextContent(ElemRef e) => Content(e, false);
+        public ValueTask<string> TextContent(ElemRef e) => GetContent(e, false);
         
         async Task<ElemRef[]> find_elements(string sel)
         {
             // Element may not be ready when called, so check-wait for 5s.
-            var ids = await Wait.ForAsync(async ()=> {
-                var x = await JS.FindAll(sel);
-                return (x.Length == 0 ? null : x);
+            var ids = new int[0];
+            await Wait.UntilAsync(async ()=> {
+                ids = await JS.FindAll(sel);
+                return (ids.Length > 0);
             }, 5000, 100);
             return ids.Select(x => new ElemRef(x)).ToArray();
         }
@@ -221,11 +238,13 @@ namespace IcuBlazor
         internal UIHelper UI;
         internal MessageBus MsgBus;
         internal CheckpointGrouping CheckGroup = new CheckpointGrouping();
-        
-        public IcuClient(IcuConfig config, RPC.IProxy rpc)
+
+        public IcuClient(IcuConfig config, RPC.IProxy rpc, UIHelper ui)
         {
             if (!ENV.IsWasm)
                 config.SessionID = Guid.NewGuid().ToString();
+
+            this.UI = ui;
             this.Config = config;
             this.Session = new IcuSession(config, rpc);
             this.MsgBus = Session.MsgBus;
@@ -251,6 +270,7 @@ namespace IcuBlazor
             return UI.LS.SetItem(ConfigKey(k), v);
         }
         public Task<T> LocalGet<T>(string k, T def)
+            where T : notnull
         {
             return UI.LS.GetItem(ConfigKey(k), def);
         }
@@ -286,11 +306,11 @@ namespace IcuBlazor
 
         internal async Task InitAsync()
         {
-            await UI.JS.CheckIcuInstallation();
+            await UI.InitAsync();
             await LoadConfig();
             Session.Validate();
             if (Config.EnableServer && Config.CanSaveTestData)
-                await UI.JS.InitBrowserCapture(Session);
+                await UI.JSinit.InitBrowserCapture(Session);
         }
 
         static internal IcuClient Fetch(IServiceProvider sp)
@@ -301,14 +321,12 @@ namespace IcuBlazor
                    $"1) Try calling {cfg}.");
             }
 
-            var icu = (IcuClient)sp.GetService(typeof(IcuClient));
+            IcuClient? icu = sp.GetService<IcuClient>();
             if (icu == null) {
                 throw new IcuException("IcuBlazor has not been configured properly.",
                    $"1) Have you called services.AddIcuBlazor() in Startup.ConfigureServices?\n" +
                     "2) Maybe this app is configured to not use IcuBlazor in production.");
             }
-
-            icu.UI = (UIHelper)sp.GetService(typeof(UIHelper));
             return icu;
         }
 
