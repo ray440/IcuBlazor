@@ -10,12 +10,18 @@ module internal IcuCore =
 
         let sched = new Proc.Scheduler()
         let msgBus = tree.MsgBus
+        let infoLog = new Logger.StringBuilderLog()
 
         let mutable state = ExecutionState.Ready
 
         let abort_run msg  = 
             match state with
             | Executing _ -> state <- Aborted msg
+            | _ -> ()
+
+        let abort_check() = 
+            match state with
+            | Aborted msg-> new Exception("Method aborted: "+msg) |> raise
             | _ -> ()
 
         let logCheckpoint (m:TestMethod) check = 
@@ -25,48 +31,30 @@ module internal IcuCore =
             if (config.StopOnFirstFailure && check.Outcome = Outcome.Fail) then
                 msgBus.Notify(Error(Exception("Abort on first failure.")))
 
-        let logResult (m:TestMethod) ttype outcome hdr msg = 
-            m.NextCheckpoint ttype outcome hdr msg 
-            |> logCheckpoint m
-
-        let abort_check() = 
-            match state with
-            | Aborted msg-> new Exception("Method aborted: "+msg) |> raise
-            | _ -> ()
-
-        let queue f = 
+        let queueCheckpoint m (f:Async<Checkpoint>) = 
             abort_check()
-            sched.QueueAsync f
-            //f
+            let ilog = infoLog.Flush()
+            sched.QueueAsync <| async {
+                let! cp = f
+                cp.InfoLog <- ilog
+                logCheckpoint m cp
+            }
 
         let logException (m:TestMethod) (e:Exception) =
-            queue (async { logResult m Assert Outcome.Fail "Exception thrown" e })
-
-        let executeMethod (m:TestMethod) = async {
-
-            let timedTest = async {
-                let testf = m.ThisFunc.Func
-                let arg = m.ThisFunc.MakeArg(m)
-                let t0 = DateTime.Now
-                do! testf(arg)
-                let dt = DateTime.Now - t0
-                m.RunTime <- Math.Round(dt.TotalMilliseconds)
+            queueCheckpoint m <| async { 
+                return m.NextCheckpoint Assert Outcome.Fail "Exception thrown" e
             }
-               
-            try
-                do! timedTest
-                //let! ok = timedTest |> Proc.WithTimeout config.TestTimeout
-                //if not ok then
-                //    new TimeoutException() |> raise
+            
 
-            with
-                //| :? TaskCanceledException 
-                //| :? TimeoutException ->
-                //    let hdr = SF "Timeout after %A ms" config.TestTimeout
-                //    logResult m Assert Fail hdr ""
-                | _ as e -> logException m e
+        let timedTest (tm:TestMethod) = async {
+            let testf = tm.ThisFunc.Func
+            let arg = tm.ThisFunc.MakeArg(tm)
+            let t0 = DateTime.Now
+            do! testf(arg)
+            let dt = DateTime.Now - t0
+            tm.RunTime <- Math.Round(dt.TotalMilliseconds)
         }
-
+               
         let runTestMethod tm = async {
             match state with
             | Aborted msg-> ()
@@ -74,8 +62,12 @@ module internal IcuCore =
                 state <- Executing tm                    
                 tm.Outcome <- Outcome.Running
                 msgBus.Notify(MethodStart tm)
-                do! executeMethod tm
-                //let _ = m.CalcOutcome()
+
+                try
+                    do! timedTest tm
+                with | _ as e -> 
+                    logException tm e
+
                 msgBus.Notify(MethodEnd tm)
         }
 
@@ -113,9 +105,11 @@ module internal IcuCore =
             
 
         member val Tree = tree
-        member val LogCheckpoint = logCheckpoint
+        member val InfoLog = infoLog
 
-        member __.Queue = queue
+        member val LogCheckpoint = logCheckpoint
+        member val QueueCheckpoint = queueCheckpoint
+
         member __.AbortRun(msg) = abort_run msg
         member __.RunTestsAsync thisObj = runTests thisObj
         member __.VerifyDiff (cp:Checkpoint) = async {
@@ -127,18 +121,8 @@ module internal IcuCore =
 
     type internal TestChecker(exec:TestExecution, rpc:RPC.IProxy, m:TestMethod) =
 
-        let infoLog = new Logger.StringBuilderLog()
-
-        let logCheckpoint (cp:Checkpoint) =
-            exec.LogCheckpoint m cp
-
-        let queue (f:Async<Checkpoint>) = 
-            let ilog = infoLog.Flush()
-            exec.Queue (async {
-                let! cp = f
-                cp.InfoLog <- ilog
-                logCheckpoint cp
-            })
+        let logCheckpoint (cp:Checkpoint) = exec.LogCheckpoint m cp
+        let queue f = exec.QueueCheckpoint m f
 
         let next_checkpoint ttype outcome hdr data =
             m.NextCheckpoint ttype outcome hdr data 
@@ -164,7 +148,7 @@ module internal IcuCore =
             cp
 
         let image_checkpoint name outcome =
-            let ilog = infoLog.Flush()
+            let ilog = exec.InfoLog.Flush()
             let da = DiffImageAssert.Make(name, ilog)
             let cp = next_checkpoint ImageDiff outcome name da
             cp.InfoLog <- ilog
@@ -192,7 +176,7 @@ module internal IcuCore =
             logCheckpoint cp
         }
 
-        member val Logger = infoLog
+        member val Logger = exec.InfoLog
 
         member __.MakeCheckpoint ttype outcome hdr data = 
             let cp = next_checkpoint ttype outcome hdr data
