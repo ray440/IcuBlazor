@@ -1,4 +1,4 @@
-﻿@page "/DynamicView"
+﻿@page "/ViewOf"
 
 @DynamicFragment
 
@@ -14,12 +14,23 @@
         builder.AddAttribute(2, "Model", Model);
         builder.CloseComponent();
     };
-
-    protected override void OnInitialized()
+    void MakeFragment()
     {
         var v = BlazorUI.FindTypeWithSuffix(Model, Suffix, typeof(razor.Views.ObjectView));
         DynamicFragment = CreateComponent(v);
-        base.OnInitialized();
     }
+
+    //protected override void OnInitialized()
+    //{
+    //    MakeFragment();
+    //    base.OnInitialized();
+    //}
+
+    protected override Task OnParametersSetAsync()
+    {
+        MakeFragment();
+        return base.OnParametersSetAsync();
+    }
+
 
 }
