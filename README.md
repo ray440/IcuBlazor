@@ -3,7 +3,7 @@
 
 IcuBlazor is set of UI components that help you develop, debug and unit test Blazor apps.  Inject your app with debug components to help you interact with data and visuals.  Explore UI automation and modern testing strategies such as text diffs, pixel diffs, property testing, and more.
 
-## For full details see [IcuBlazor.com](http://icublazor.com/).
+## For full details see [IcuBlazor.com](http://icublazor.com/index.html?g).
 
 ### What's in the box?
 - Modern testing API
@@ -22,9 +22,9 @@ IcuBlazor is set of UI components that help you develop, debug and unit test Bla
 - Other Blazor components
 
     - `<IcuTestViewer/>`<br/>
-        A Blazor component that displays all your unit tests.
+        A Blazor component that displays your unit tests.
 
-    - `<DynamicView Model=@myObject>` <br/>
+    - `<ViewOf Model=@myObject>` <br/>
           A generic view of any object.  Useful for displaying Exceptions or objects as JSON.
 
     - `<Debug v=@my.var>` <br/>
