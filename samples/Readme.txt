@@ -12,6 +12,6 @@ Try IcuBlazor Examples
 To run the samples load the project in Visual Studio, set a 
 startup project like Server.SSBLinked and run it. 
 Note: CSB.csproj shouldn't be used as the startup project. It
-requires Server.CSBLinked to startup properly.
+requires a server like Server.CSBLinked to startup properly.
 
-for more info swee IcuBlazor.com
+For more info see https://IcuBlazor.com/
