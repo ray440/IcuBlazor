@@ -105,6 +105,11 @@
         await base.OnAfterRenderAsync(firstRender);
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        await UI.InitAsync();
+        await base.OnInitializedAsync();
+    }
 }
 
 @{
@@ -115,14 +120,14 @@
 @if (show_drop) {
     <div class="overlay" @onclick=@clicked_outside></div>
 }
-<div id=@dropid class="dropdown-wrapper">
-    <div @onclick="@clicked_label">
+<span id=@dropid class="dropdown-wrapper">
+    <span @onclick="@clicked_label">
     @if (LabelContent != null) {
         @LabelContent
     } else {
         @Label
     }
-    </div>
+    </span>
     <div class="drop @cs" style=@ss>
         @if (DropContent != null) {
             @DropContent
@@ -130,4 +135,4 @@
             <div class="drop-default">@Drop</div>
         }
     </div>    
-</div>
+</span>

@@ -88,7 +88,7 @@ namespace IcuBlazor
             JSR = jsr;
         }
 
-        internal async Task InitAsync()
+        public async Task InitAsync()
         {
             if (JS == null) {
                 JSinit = await JSInit.InitAsync(JSR);
@@ -257,7 +257,7 @@ namespace IcuBlazor
 
         internal string GetLogo()
         {
-            return "http://icublazor.com/docs/images/logo-dark.svg?help_102";
+            return "http://icublazor.com/docs/images/logo-dark.svg?help_131";
         }
 
         public string ConfigKey(string part)
