@@ -71,20 +71,20 @@ type Checker internal (tc:TestChecker, config:IcuConfig) =
     
 
 
-    member val Logger = tc.Logger
+    member val internal Logger = tc.Logger
 
     member __.MakeCheckpoint = tc.MakeCheckpoint Assert Outcome.Unknown
 
     /// <summary>
     /// Displays `message` within test results.
     /// </summary>
-    /// <param name="message">Description of test condition.</param>
     member __.Info message = tc.Logger.Log message
 
     /// <summary>
     /// Displays a custom CheckPoint.
     /// </summary>
-    member __.Show(title, dataModel, 
+    member __.Show(title, 
+        [<Optional; DefaultParameterValue(null)>] dataModel:obj, 
         [<Optional; DefaultParameterValue(Outcome.Logging)>] outcome:Outcome) =
         tc.Show outcome title dataModel
 

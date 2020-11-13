@@ -214,5 +214,6 @@ module Reflect =
         |> Seq.exclude(Str.Contains "<anonymous>")
         |> Seq.exclude(Str.Contains "<filename unknown>")
         |> Seq.exclude(Str.Contains "  at IcuBlazor.")
+        |> Seq.exclude(Str.Contains "  at System.")
         |> Seq.exclude(Str.Contains "  at Microsoft.")
         |> Str.Join "\n"

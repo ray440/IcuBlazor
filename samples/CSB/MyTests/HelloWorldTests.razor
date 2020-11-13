@@ -25,7 +25,6 @@
         await Task.Delay(500);
         var dt = (DateTime.Now - t0).TotalMilliseconds;
 
-        // Surprise! Sometimes dt<500 :o
         check.True(500 < dt && dt < 550, $"async test waited {dt} ms");
     }
 }

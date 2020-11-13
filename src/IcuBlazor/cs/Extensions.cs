@@ -38,15 +38,6 @@ namespace IcuBlazor
         {
             services.AddSingleton(config);
             services.AddScoped<UIHelper>();
-            //services.AddSingleton(sp => {
-            //    if (!ENV.IsWasm) return ((IJSInProcessRuntime)null);
-            //    return (IJSInProcessRuntime)sp.GetService<IJSRuntime>();
-            //});
-            //services.AddSingleton(sp => {
-            //    if (!ENV.IsWasm) return ((IJSUnmarshalledRuntime)null);
-            //    return (IJSUnmarshalledRuntime)sp.GetService<IJSRuntime>();
-            //});
-
             services.AddTransient<IcuClient>(); // one for each IcuTestViewer
             services.AddTransient(typeof(RPC.IProxy), RPC.ProxyType(config));
             services.AddHttpClient("ICUapi");

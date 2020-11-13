@@ -36,6 +36,7 @@ module Proc =
         let rec attempt n = async {
             try 
                 DBG.Log(SF "attempt(%A)" n)
+                //DBG.Log($"attempt({n})")
                 return! asyncFunc
             with e ->
                 if n < numRetries then
