@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Version>1.3.0-rc1</Version>
+    <Version>1.3.1</Version>
     <Authors>NXS-7 Software Inc.</Authors>
     <Company>NXS-7 Software Inc.</Company>
-    <Description>A simple unit test framework for Blazor components. It offers modern testing strategies such as text diffs, pixel diffs, UI automation and more.</Description>
+    <Description>Blazor components for Development, Debugging and Testing.</Description>
     <Copyright>(c) NXS-7 Sotware Inc.</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageTags>Blazor, testing, unit test, GUI, UI, razor</PackageTags>
+    <PackageTags>Blazor, development, debugging, testing, unit test, GUI, UI, razor</PackageTags>
     <PackageProjectUrl>https://github.com/ray440/IcuBlazor</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ray440/IcuBlazor</RepositoryUrl>
     <Nullable>enable</Nullable>
@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="Delegate.LessBuilder" Version="1.3.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0-rc.2.20475.17" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.ProtectedBrowserStorage" Version="5.0.0-rc.1.20451.17" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
     <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="4.0.3">

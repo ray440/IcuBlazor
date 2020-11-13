@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <LangVersion>preview</LangVersion>
-    <Version>1.3.0-rc1</Version>
+    <Version>1.3.1</Version>
     <Authors>NXS-7 Software Inc.</Authors>
     <Company>NXS-7 Software Inc.</Company>
-    <Description>Server component for IcuBlazor a simple unit test framework for Blazor components.</Description>
+    <Description>Server lib for IcuBlazor development components.</Description>
     <Copyright>(c) NXS-7 Sotware Inc.</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageTags>Blazor, testing, unit test, GUI, UI, razor</PackageTags>
+    <PackageTags>Blazor, development, debugging, testing, unit test, GUI, UI, razor</PackageTags>
     <PackageProjectUrl>https://github.com/ray440/IcuBlazor</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ray440/IcuBlazor</RepositoryUrl>
     <IsPackable>true</IsPackable>
